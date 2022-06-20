@@ -41,8 +41,8 @@ void* mymalloc(int n, int linen, const char* caller){
     return malloc(n);
 }
 
-//#define free(n) myfree(n, __LINE__, __FUNCTION__)
-//#define malloc(n) mymalloc(n, __LINE__, __FUNCTION__)
+// #define free(n) myfree(n, __LINE__, __FUNCTION__)
+// #define malloc(n) mymalloc(n, __LINE__, __FUNCTION__)
 
 int stringlen(char s[]){
     int r = 0;
@@ -170,19 +170,19 @@ char* mult(char s1[], char s2[]){
 }
 
 
-struct list* addlist(struct list* start, char* value){
-    struct list* nm;
-    struct list* end;
-    while(start!=NULL){
-	if(start->link==NULL)end = start;
-	start = start->link;
-    }
-    nm = (struct list*) malloc(sizeof(struct list));
-    nm->word = value;
-    nm->link = NULL;
-    end->link = nm;
-    return start;
-}
+// struct list* addlist(struct list* start, char* value){
+//     struct list* nm;
+//     struct list* end;
+//     while(start!=NULL){
+// 	if(start->link==NULL)end = start;
+// 	start = start->link;
+//     }
+//     nm = (struct list*) malloc(sizeof(struct list));
+//     nm->word = value;
+//     nm->link = NULL;
+//     end->link = nm;
+//     return start;
+// }
 
 struct list* addlist2(struct list* start, char* value){
     struct list* newmember;
@@ -562,6 +562,9 @@ struct list* calculate(struct list* list){
     return stack;
 }
 
+/*
+	LEGACY CODE
+
 struct list* newsplit(char* s){
     int i = 0;
     int start = 0;
@@ -700,7 +703,7 @@ struct ulist* genulist(struct list* list){
     return nulist;
 }
 
-/*
+
 struct ulist{
     char type;
     union value{
@@ -709,7 +712,7 @@ struct ulist{
     } value;
     struct ulist* link;
 };
-*/
+
 
 
 struct ulist* calculateu(struct ulist* list){
@@ -734,11 +737,209 @@ struct ulist* calculateu(struct ulist* list){
     return stack;
 }
 
+*/
+
+char* copytillend(char* s, int start, int end){
+    char* ns;
+
+    int counter = end-start;
+    int i = start;
+    
+    ns = (char*)malloc(counter*sizeof(char)+1);
+    ns[counter]='\0';
+    for(int j = 0; j < counter; j++){
+	ns[j] = s[start+j];
+    }
+    return ns;
+}
 
 
 
 
-//(3(12)3 4 5)
+struct list* token(char* s){
+    struct list* nl = NULL;
+    int i = -1;
+    int start = 0;
+    do{
+	i++;
+	if(s[i] =='('){
+	    
+	    if(start!= i){
+		nl = addlist2(nl, copytillend(s, start, i));
+	    }
+	    nl = addlist2(nl, strcopy("("));
+	    start=i+1;
+        }
+	else if(s[i]==')'){
+	    
+	    if(start!= i){
+		nl = addlist2(nl, copytillend(s, start, i));
+	    }
+	    nl = addlist2(nl, strcopy(")"));
+	    start=i+1;
+	}else if(s[i]==' '||s[i]=='\0'){
+	    
+	    if(start!=i){
+		nl = addlist2(nl, copytillend(s, start, i));
+	    }
+	    while(s[i]==' '){
+	    start = i+1;
+	    i++;
+	    }
+	    if(s[i]!='\0')i--;
+	}
+    }while(s[i]!='\0');
+    struct list* temp = swaplist(nl);
+    freelist(nl);
+    return temp;
+}
+
+void printulist(struct ulist* ulist, int i){
+    int j = 0;
+    while(ulist!= NULL){
+	if(ulist->type){
+	    printulist(ulist->value.link, i+1);
+	    // free(ulist->value.link);
+	}else{
+	    while(j != i){
+		printf(" ");
+		    j++;
+		}
+	    printf("%s\n",ulist->value.str);
+	    j=0;
+	    free(ulist->value.str);
+	}
+
+	struct ulist* tmp = ulist;
+	ulist=ulist->link;
+	free(tmp);
+    }
+}
+void freeUlist(struct ulist* ulist){
+	while(ulist != NULL){
+		if(ulist->type) {freeUlist(ulist->value.link);}
+		else {free(ulist->value.str);}
+
+        struct ulist* tmp = ulist;
+		ulist = ulist->link;
+		free(tmp);
+	}
+}
+
+// void foo(struct ulist* l){
+// 	while(l != NULL){
+// 		printf("yes\n");
+// 		l = l->link;
+// 	}
+// }
+struct list* copyInside(struct list* list){
+	int n = 1;
+	struct list* newList = NULL;
+	while(list != NULL && n != 0){
+		if(equal("(", list->word)){
+		struct list* tmp;
+		n += 1;
+		tmp = (struct list*) malloc(sizeof(list));
+			tmp->word = strcopy(list->word);
+			tmp->link = newList;
+			newList = tmp;
+		}
+		else if(equal(")", list->word)){
+		n -= 1;
+		if(n != 0){
+			struct list* tmp;
+			tmp = (struct list*) malloc(sizeof(list));
+			tmp->word = strcopy(list->word);
+			tmp->link = newList;
+			newList = tmp;
+		}
+		}
+		else{
+			struct list* tmp;
+			tmp = (struct list*) malloc(sizeof(list));
+			tmp->word = strcopy(list->word);
+			tmp->link = newList;
+			newList = tmp;
+		}
+		list = list->link;
+
+	}
+	struct list* tmp = swaplist(newList);
+	freelist(newList);
+	return tmp;
+}
+
+struct list* skipInside(struct list* list){
+	int n = 1;
+	struct list* tmp;
+	do{
+		tmp = list;
+		free(tmp->word);
+		list = list->link;
+		if(equal("(", list->word)) n += 1;
+		else if(equal(")", list->word)) n -= 1;
+	}while(list != NULL && n != 0);
+	return list;
+}
+
+struct ulist* swapUpperUlist(struct ulist* ulist){
+	struct ulist* newUList = NULL;
+	struct ulist* tmp;			
+
+	while(ulist != NULL){
+		if(ulist->type){
+			tmp = (struct ulist*)malloc(sizeof(ulist));
+			tmp->link = newUList;
+			tmp->value.link = ulist->value.link;
+			tmp->type = 1;
+			newUList = tmp;
+		}else{
+			tmp = (struct ulist*)malloc(sizeof(ulist));
+			tmp->link = newUList;
+			tmp->value.str = ulist->value.str;
+			tmp->type = 0;
+			newUList = tmp;
+		}
+		tmp = ulist;
+		ulist = ulist->link;
+		free(tmp);
+	}
+	return newUList;
+}
+
+struct ulist* generateUlist(struct list* list){
+	struct ulist* newList = NULL;
+	struct list* start = list;
+	while(list != NULL){
+		if(equal("(", list->word)){
+			struct ulist* sublist;
+			sublist = (struct ulist*)malloc(sizeof(struct ulist*));
+			sublist->link = newList;
+			sublist->value.link = generateUlist(copyInside(list->link));
+			list = skipInside(list);
+			free(list->word);
+			sublist->type = 1;
+			newList = sublist;
+
+		}else if(equal(")", list->word)){
+
+		}else{
+			struct ulist* tmp;
+			tmp = (struct ulist*)malloc(sizeof(struct ulist*));
+			tmp->link = newList;
+			tmp->value.str = list->word;
+			tmp->type = 0;
+			newList = tmp;
+		}
+
+		list = list->link;
+	}
+
+	freelist(start);
+	return swapUpperUlist(newList);
+}
+
+
 
 
 int main(){
@@ -748,37 +949,46 @@ int main(){
 //    printf("\n free: %d , malloc: %d\n", freecounter, malloccounter);
 //    printlist(token("3 1 2 3 4 5"));
 //    printulist(calculateu(genulist(token("12 1 ( (69) 2 3)"))));
-    printulist(genulist(token("12 11 (10 (100 200)300)")), 0);
+//    printulist(genulist(token("12 11 (10 (100 200)300)")), 0);
 //    printlist(token("12 1 ( (69) 2 3)"));
 //    printlist(newsplit());
-/*
-    struct ulist* nulist0;
-    struct ulist* nulist1;
-    struct ulist* nulist2;
-    struct ulist* nulist3;
-    struct ulist* nulist4;
-    nulist0 = malloc(sizeof(struct ulist));
-    nulist1 = malloc(sizeof(struct ulist));
-    nulist2 = malloc(sizeof(struct ulist));
-    nulist3 = malloc(sizeof(struct ulist));
-    nulist4 = malloc(sizeof(struct ulist));
-    nulist0->type=0;
-    nulist0->value.str = "nul0";
-    nulist0->link = nulist1;
-    nulist1->type=1;
-    nulist1->value.link=nulist2;
-    nulist1->link = nulist3;
-    nulist2->type = 0;
-    nulist2->value.str=" nul2";
-    nulist2->link=nulist4;
-    nulist4->type = 0;
-    nulist4->value.str = " nul4";
-    nulist4->link= NULL;
-    nulist3->type = 0;
-    nulist3->value.str="nul3";
-    nulist3->link =NULL;
-*/
-//    printulist(nulist0);
+
+    // struct ulist* nulist0;
+    // struct ulist* nulist1;
+    // struct ulist* nulist2;
+    // struct ulist* nulist3;
+    // struct ulist* nulist4;
+    // nulist0 = malloc(sizeof(struct ulist));
+    // nulist1 = malloc(sizeof(struct ulist));
+    // nulist2 = malloc(sizeof(struct ulist));
+    // nulist3 = malloc(sizeof(struct ulist));
+    // nulist4 = malloc(sizeof(struct ulist));
+    // nulist0->type=0;
+    // nulist0->value.str = strcopy("nul0");
+    // nulist0->link = nulist1;
+    // nulist1->type=1;
+    // nulist1->value.link=nulist2;
+    // nulist1->link = nulist3;
+    // nulist2->type = 0;
+    // nulist2->value.str=strcopy("nul2");
+    // nulist2->link=nulist4;
+    // nulist4->type = 0;
+    // nulist4->value.str = strcopy("nul4");
+    // nulist4->link= NULL;
+    // nulist3->type = 0;
+    // nulist3->value.str= strcopy("nul3");
+    // nulist3->link =NULL;
+
+    printulist(generateUlist(token("1 (2 dup drop swap(12 privet drop)) 3")), 0);
+    // generateUlist(token("( 3 )"));
+
+    //freeUlist(nulist0);
 //    printulist(swapulist(nulist0));
+	// printlist(copyInside(token("12 (13) (14 (13)(13)(13)) ) 25 26 (17)")));
+	// printlist(token("12 (13) 14 ) 25 26 (17)"));
+
+    // printulist(generateUlist(token("12 11 10")), 0);
+    // foo(generateUlist(token(strcopy("12 11 10"))));
+    printf("Malloc calls:%d Free calls:%d\n",malloccounter,freecounter);
     return 0;
 }
