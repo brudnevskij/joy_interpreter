@@ -1,0 +1,1 @@
+count (dup null (drop 0) (rest count 1 +) if) def (1 2 3) count
