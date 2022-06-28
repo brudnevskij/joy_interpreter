@@ -936,8 +936,9 @@ struct ulist* calculate(struct ulist* ulist){
 				// struct ulist* decoy2 = (struct ulist*)malloc(sizeof(struct ulist*));
 				tmp1->link = stack->link;
 				decoy->link = stack->value.link;
+				stack = stack->link->link;
+				tmp1->link->link = ulist->link;
 				ulist = decoy;
-				stack= stack->link->link;
 			}else if(equal("if", ulist->value.str)){
 				// struct ulist* tmp1 = getLastElement(stack->value.link);
 				struct ulist* decoy = (struct ulist*)malloc(sizeof(struct ulist*));

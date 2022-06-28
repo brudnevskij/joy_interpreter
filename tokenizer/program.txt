@@ -1,1 +1,11 @@
-count (dup null (drop 0) (rest count 1 +) if) def (1 2 3) count
+count (dup null (drop 0) (rest count 1 +) if) def
+append(swap dup null (drop)(swap (uncons) dip append cons) if)def
+uncons (dup first swap rest) def
+map
+(swap dup null
+(swap drop)
+(uncons ( swap dup) dip ()cons cons (cons () swap dip drop) dip i swap map cons)
+ if)
+ def
+
+(1 2 3) (2 *) map
