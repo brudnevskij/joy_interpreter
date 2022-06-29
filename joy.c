@@ -549,77 +549,7 @@ char* substract(char* s1, char* s2){
     return result;
 }
 
-// struct list* calculate(struct list* list){
-//     struct list* stack = NULL;
-//     struct list* temp1;
-//     struct list* temp2;
-//     char* tempch;
-//     while(list!=NULL){
-// 	if(equal(list->word, "+")){
-// 	    temp1 = stack;
-// 	    temp2 = stack->link;
-// 	    stack = addlist2(stack->link->link ,dispatchadd(stack->word, stack->link->word));
-// 	    free(temp1);
-// 	    free(temp2);
-// 	    free(list->word);
-// 	}
-// 	else if(equal(list->word, "-")){
-// 	    temp1 = stack;
-// 	    temp2 = stack->link;
-// 	    stack = addlist2(stack->link->link ,dispatchsub(stack->word, stack->link->word));
-// 	    free(temp1);
-// 	    free(temp2);
-// 	    free(list->word);
-// 	}
-// 	else if(equal(list->word, "*")){
-// 	    temp1 = stack;
-// 	    temp2 = stack->link;
-// 	    stack = addlist2(stack->link->link ,dispatchmult(stack->word, stack->link->word));
-// 	    free(temp1);
-// 	    free(temp2);
-// 	    free(list->word);
-// 	}else if(equal(list->word, "dup")){
-// 	    stack = addlist2(stack,strcopy(stack->word));
-// 	    free(list->word);
-// 	}else if(equal(list->word, "swap")){
-// 	    tempch = stack->word;
-// 	    stack->word = stack->link->word;
-// 	    stack->link->word = tempch;
-// 	    free(list->word);
-// 	}else if(equal(list->word, "drop")){
-// 	    temp1 = stack;
-// 	    stack = stack->link;
-// 	    free(temp1->word);
-// 	    free(temp1);
-// 	    free(list->word);
-// 	}
-// 	else{
-// 	    stack = addlist2(stack, list->word);
-// 	}
-// 	temp1 = list;
-// 	list = list->link;
-// 	free(temp1);
-	
-//     }
 
-//     return stack;
-// }
-
-/*
-
-
-struct ulist{
-    char type;
-    union value{
-    char* str;
-    struct ulist* link;
-    } value;
-    struct ulist* link;
-};
-
-
-
-*/
 
 char* copytillend(char* s, int start, int end){
     char* ns;
@@ -676,19 +606,14 @@ struct list* token(char* s){
     return temp;
 }
 
-void printulist(struct ulist* ulist, int i){
+void printAndFreeUlist(struct ulist* ulist, int i){
     int j = 0;
     while(ulist!= NULL){
 	if(ulist->type){
 	    printf("(");
-	    printulist(ulist->value.link, i+1);
+	    printAndFreeUlist(ulist->value.link, i+1);
 	    printf(")");
-	    // free(ulist->value.link);
 	}else{
-	 //    while(j != i){
-		// printf(" ");
-		//     j++;
-		// }
 	    printf(" %s ",ulist->value.str);
 	    j=0;
 	    free(ulist->value.str);
@@ -699,6 +624,21 @@ void printulist(struct ulist* ulist, int i){
 	free(tmp);
     }
 }
+
+void printUlist(struct ulist* ulist){
+    while(ulist!= NULL){
+	if(ulist->type){
+	    printf("(");
+	    printUlist(ulist->value.link);
+	    printf(")");
+	}else{
+	    printf(" %s ",ulist->value.str);
+	}
+
+	ulist=ulist->link;
+    }
+}
+
 void freeUlist(struct ulist* ulist){
 	while(ulist != NULL){
 		if(ulist->type) {freeUlist(ulist->value.link);}
@@ -821,7 +761,7 @@ struct ulist* generateUlist(struct list* list){
 	while(list != NULL){
 		if(equal("(", list->word)){
 			struct ulist* sublist;
-			sublist = (struct ulist*)malloc(sizeof(struct ulist*));
+			sublist = (struct ulist*)malloc(sizeof(struct ulist));
 			sublist->link = newList;
 			sublist->value.link = generateUlist(copyInside(list->link));
 			list = skipInside(list);
@@ -833,7 +773,7 @@ struct ulist* generateUlist(struct list* list){
 
 		}else{
 			struct ulist* tmp;
-			tmp = (struct ulist*)malloc(sizeof(struct ulist*));
+			tmp = (struct ulist*)malloc(sizeof(struct ulist));
 			tmp->link = newList;
 			tmp->value.str = list->word;
 			tmp->type = 0;
@@ -1120,9 +1060,16 @@ struct ulist* calculate(struct ulist* ulist){
 			ulist = ulist->link;
 			tmp->link = stack;
 			stack = tmp;
-			
+
 
 		}
+		printf("Stack: ");
+		printUlist(stack);
+		printf("\n");
+		printf("Expression: ");
+		printUlist(ulist);
+		printf("\n");
+		printf("\n");
 	}
 	freeUlist(functions);
 	return swapUpperUlist(stack);
@@ -1154,12 +1101,13 @@ int main(){
 			if(buffer[i] == 10) buffer [i] = 32;
 			i++;
 		}
-		printulist(calculate(generateUlist(token(buffer))), 0);
+		// printf("Output:");
+		printAndFreeUlist(calculate(generateUlist(token(buffer))), 0);
 	}
 	
 	free(buffer);
 	// struct ulist* l = NULL;
-	// printulist(addToUlist(l, dispatchadd(strcopy("2"), strcopy("2")), 0), 0);
+	// printAndFreeUlist(addToUlist(l, dispatchadd(strcopy("2"), strcopy("2")), 0), 0);
     printf("\nMalloc calls:%d Free calls:%d\n",malloccounter,freecounter);
 
     return 0;
