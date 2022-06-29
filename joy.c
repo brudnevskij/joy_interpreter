@@ -990,7 +990,6 @@ struct ulist* calculate(struct ulist* ulist){
 
 
 int main(){
-    // printulist(calculate(generateUlist(token("add     (1    +    ) def 3      add     add"))), 0);
 
 	char * buffer = 0;
 	long length;
