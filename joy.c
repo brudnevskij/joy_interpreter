@@ -890,34 +890,59 @@ struct ulist* calculate(struct ulist* ulist){
 			if(equal("+", ulist->value.str)){
 				struct ulist* tmp1 = stack->link;//first addend
 				struct ulist* tmp2 = stack ;//second addend
-				struct ulist* tmp3 = (struct ulist*)malloc(sizeof(struct ulist*));//new member
+
+				//sum
+				struct ulist* tmp3 = (struct ulist*)malloc(sizeof(struct ulist*));
 				tmp3->type = 0;
 				tmp3->value.str = dispatchadd(tmp1->value.str, tmp2->value.str);
 				tmp3->link = stack->link->link;
 				stack = tmp3;
-				ulist = ulist->link;
 
+				free(tmp1);
+				free(tmp2);
+				tmp1 = ulist;
+				ulist = ulist->link;
+				free(tmp1->value.str);
+				free(tmp1);
 
 			}else if(equal("-", ulist->value.str)){
-				struct ulist* tmp1 = stack->link;//first addend
-				struct ulist* tmp2 = stack ;//second addend
+				struct ulist* tmp1 = stack->link;//minuend
+				struct ulist* tmp2 = stack ;//substrahend
+
+				//difference
 				struct ulist* tmp3 = (struct ulist*)malloc(sizeof(struct ulist*));//new member
 				tmp3->type = 0;
 				tmp3->value.str = dispatchsub(tmp1->value.str, tmp2->value.str);
 				tmp3->link = stack->link->link;
 				stack = tmp3;
-				ulist = ulist->link;
 
+				free(tmp1->value.str);
+				free(tmp2->value.str);
+				free(tmp1);
+				free(tmp2);
+
+				tmp1 = ulist;
+				ulist = ulist->link;
+				free(tmp1->value.str);
+				free(tmp1);
 
 			}else if(equal("*", ulist->value.str)){
-				struct ulist* tmp1 = stack->link;//first addend
-				struct ulist* tmp2 = stack ;//second addend
-				struct ulist* tmp3 = (struct ulist*)malloc(sizeof(struct ulist*));//new member
+				struct ulist* tmp1 = stack->link;//first factor
+				struct ulist* tmp2 = stack ;//second factor
+
+				//product
+				struct ulist* tmp3 = (struct ulist*)malloc(sizeof(struct ulist*));
 				tmp3->type = 0;
 				tmp3->value.str = dispatchmult(tmp1->value.str, tmp2->value.str);
 				tmp3->link = stack->link->link;
 				stack = tmp3;
+
+				free(tmp1);
+				free(tmp2);
+				tmp1 = ulist;
 				ulist = ulist->link;
+				free(tmp1->value.str);
+				free(tmp1);
 
 			}else if(equal("dup", ulist->value.str)){
 				struct ulist* tmp = stack->link;
@@ -930,82 +955,158 @@ struct ulist* calculate(struct ulist* ulist){
 				tmp->type = stack->type;
 				tmp->link = stack;
 				stack = tmp;
+
+				tmp = ulist;
 				ulist = ulist->link;
+				free(tmp->value.str);
+				free(tmp);
 
 			}else if(equal("drop", ulist->value.str)){
 				struct ulist* tmp = stack;
 				stack = stack->link;
+				if(tmp->type)freeUlist(tmp->value.link);
+				else free(tmp->value.str);
+				free(tmp);
+				tmp = ulist;
 				ulist = ulist->link;
+				free(tmp->value.str);
+				free(tmp);
 
 			}else if(equal("swap", ulist->value.str)){
-				struct ulist* tmp1 = stack->link;
-				struct ulist* tmp2 = stack;
-				tmp2->link = tmp1->link;
-				tmp1->link = tmp2;
-				stack = tmp1;
+				struct ulist* tmp = stack;
+				stack = stack->link;
+				tmp->link = stack->link;
+				stack->link = tmp;
+
+				tmp = ulist;
 				ulist = ulist->link;
+				free(tmp->value.str);
+				free(tmp);
 
 			}else if(equal("null", ulist->value.str)){
 				struct ulist* tmp1 = (struct ulist*)malloc(sizeof(struct ulist*));
 				struct ulist* tmp2 = stack;
+
+				tmp1->type = 0;
 				tmp1->link = stack->link;
 				if(stack->value.link == NULL)tmp1->value.str = strcopy("true");
 				else tmp1->value.str = strcopy("false");
-				tmp1->type = 0;
 				stack = tmp1;
+
+				freeUlist(tmp2->value.link);
+				free(tmp2);
+				tmp2 = ulist;
 				ulist = ulist->link;
-				
+				free(tmp2->value.str);
+				free(tmp2);
+
 			}else if(equal("first", ulist->value.str)){
+				struct ulist* tmp1 = stack;
+				struct ulist* tmp2 = stack->value.link->link;
 				stack->value.link->link = stack->link;
 				stack = stack->value.link;
-				ulist = ulist->link;
 
+				freeUlist(tmp2);
+				free(tmp1);
+				tmp1 = ulist;
+				ulist = ulist->link;
+				free(tmp1->value.str);
+				free(tmp1);
 
 			}else if(equal("rest", ulist->value.str)){
+				struct ulist* tmp = stack->value.link;
 				stack->value.link = stack->value.link->link;
+
+				tmp->link = NULL;
+				freeUlist(tmp);
+				tmp = ulist;
 				ulist = ulist->link;
+				free(tmp->value.str);
+				free(tmp);
 
 			}else if(equal("cons", ulist->value.str)){
-				struct ulist* tmp1 = stack->link;
+				struct ulist* tmp = stack->link;
 				stack->link = stack->link->link;
-				tmp1->link = stack->value.link;
-				stack->value.link = tmp1;
-				ulist = ulist->link;
+				tmp->link = stack->value.link;
+				stack->value.link = tmp;
 
+				tmp = ulist;
+				ulist = ulist->link;
+				free(tmp->value.str);
+				free(tmp);
 			}else if(equal("i", ulist->value.str)){
+				struct ulist* tmp1 = stack;
+				struct ulist* tmp2 = ulist;
 				ulist = concatUlist(stack->value.link, ulist->link);
 				stack= stack->link;
-							
+
+				free(tmp1);
+				free(tmp2->value.str);
+				free(tmp2);						
 				
 			}else if(equal("dip", ulist->value.str)){
 				struct ulist* tmp1 = stack->link;
 				struct ulist* tmp2 = stack;
 				stack = stack->link->link;
 				tmp1->link = NULL;
-				ulist = concatUlist(concatUlist(tmp2->value.link, tmp1), ulist->link);
-				
+				tmp1 = concatUlist(tmp2->value.link, tmp1);
+				free(tmp2);
+				tmp2 = ulist;
+				ulist = concatUlist(tmp1, ulist->link);
+				free(tmp2->value.str);
+				free(tmp2);
 
 			}else if(equal("if", ulist->value.str)){
+				struct ulist* ifTrue = stack->link;
+				struct ulist* ifFalse = stack;
+				struct ulist* tmp;
+
 				if(equal("true", stack->link->link->value.str)){
-					ulist = concatUlist(stack->link->value.link, ulist->link);
+					tmp = ulist;
+					ulist = concatUlist(ifTrue->value.link, ulist->link);
+					free(tmp->value.str);
+					free(tmp);
+					tmp = stack->link->link;
 					stack = stack->link->link->link;
+
+					free(tmp->value.str);
+					free(tmp);
+					freeUlist(ifFalse->value.link);
+					free(ifFalse);
+					free(ifTrue);
 				}else if(equal("false", stack->link->link->value.str)){
+					tmp = ulist;
 					ulist = concatUlist(stack->value.link, ulist->link);
+					free(tmp->value.str);
+					free(tmp);
+					tmp = stack->link->link;
 					stack = stack->link->link->link;
+
+					free(tmp->value.str);
+					free(tmp);
+					freeUlist(ifTrue->value.link);
+					free(ifTrue);
+					free(ifFalse);
 				}
 			}else if(equal("def", ulist->value.str)){
-				struct ulist* tmp1 = stack->link;
-				struct ulist* tmp2 = stack;
+				struct ulist* functionName = stack->link;
+				struct ulist* functionBody = stack;
 				stack = stack->link->link;
-				tmp1->link = tmp2;
-				tmp2->link = functions;
-				functions = tmp1;
+				functionName->link = functionBody;
+				functionBody->link = functions;
+				functions = functionName;
+
+				functionName = ulist;
 				ulist = ulist->link;
-				
+				free(functionName->value.str);
+				free(functionName);
 
 			}else{
 				if(functionsSearch(ulist->value.str, functions)){
+					struct ulist* tmp = ulist;
 					ulist = concatUlist(copyUlist(getFunction(ulist->value.str, functions)), ulist->link);
+					free(tmp->value.str);
+					free(tmp);
 				}else{
 				struct ulist* tmp = ulist;
 				ulist = ulist->link;
@@ -1023,6 +1124,7 @@ struct ulist* calculate(struct ulist* ulist){
 
 		}
 	}
+	freeUlist(functions);
 	return swapUpperUlist(stack);
 }
 
@@ -1030,45 +1132,32 @@ struct ulist* calculate(struct ulist* ulist){
 
 int main(){
 
-	// char * buffer = 0;
-	// long length;
-	// FILE * f = fopen ("program.txt", "rb");
+	char * buffer = 0;
+	long length;
+	FILE * f = fopen ("program.txt", "rb");
 
-	// if (f)
-	// {
- //  		fseek (f, 0, SEEK_END);
- //  		length = ftell (f);
- //  		fseek (f, 0, SEEK_SET);
- //  		buffer = malloc (length);
- //  	if (buffer){
- //    	fread (buffer, 1, length, f);
- //  	}
- //  	fclose (f);
-	// }
+	if (f)
+	{
+  		fseek (f, 0, SEEK_END);
+  		length = ftell (f);
+  		fseek (f, 0, SEEK_SET);
+  		buffer = malloc (length);
+  	if (buffer){
+    	fread (buffer, 1, length, f);
+  	}
+  	fclose (f);
+	}
 
-	// if (buffer){
-	// 	int i = 0;
-	// 	while(buffer[i]){
-	// 		if(buffer[i] == 10) buffer [i] = 32;
-	// 		i++;
-	// 	}
-	// 	printulist(calculate(generateUlist(token(buffer))), 0);
-	// }
-	// printf("%s", dispatchadd(strcopy("-3"), strcopy("2")));
-    // printf("0=%s\n", dispatchsub(strcopy("3"), strcopy("3")));
-    // printf("6=%s\n", ds(strcopy("3"), strcopy("-3")));
-    // printf("-6=%s\n", ds(strcopy("-3"), strcopy("3")));
-    // printf("0=%s\n", ds(strcopy("-3"), strcopy("-3")));
-    // printf("5=%s\n", ds(strcopy("10"), strcopy("5")));
-    // printf("15=%s\n", ds(strcopy("10"), strcopy("-5")));
-    // printf("-15=%s\n", ds(strcopy("-10"), strcopy("5")));
-    // printf("-5=%s\n", ds(strcopy("-10"), strcopy("-5")));
-    // printf("-5=%s\n", ds(strcopy("5"), strcopy("10")));
-    // printf("15=%s\n", ds(strcopy("5"), strcopy("-10")));
-    // printf("-15=%s\n", ds(strcopy("-5"), strcopy("10")));
-    // printf("5=%s\n", ds(strcopy("-5"), strcopy("-10")));
-    char* a = dispatchsub("-5", "-10");
-    free(a);
+	if (buffer){
+		int i = 0;
+		while(buffer[i]){
+			if(buffer[i] == 10) buffer [i] = 32;
+			i++;
+		}
+		printulist(calculate(generateUlist(token(buffer))), 0);
+	}
+	
+	free(buffer);
 
     printf("\nMalloc calls:%d Free calls:%d\n",malloccounter,freecounter);
 
