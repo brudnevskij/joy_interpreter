@@ -852,6 +852,7 @@ struct ulist* calculate(struct ulist* ulist){
 				tmp3->value.str = dispatchadd(tmp1->value.str, tmp2->value.str);
 				tmp3->link = stack->link->link;
 				stack = tmp3;
+				ulist = ulist->link;
 
 
 			}else if(equal("-", ulist->value.str)){
@@ -862,6 +863,8 @@ struct ulist* calculate(struct ulist* ulist){
 				tmp3->value.str = dispatchsub(tmp1->value.str, tmp2->value.str);
 				tmp3->link = stack->link->link;
 				stack = tmp3;
+				ulist = ulist->link;
+
 
 			}else if(equal("*", ulist->value.str)){
 				struct ulist* tmp1 = stack->link;//first addend
@@ -871,6 +874,8 @@ struct ulist* calculate(struct ulist* ulist){
 				tmp3->value.str = dispatchmult(tmp1->value.str, tmp2->value.str);
 				tmp3->link = stack->link->link;
 				stack = tmp3;
+				ulist = ulist->link;
+
 			}else if(equal("dup", ulist->value.str)){
 				struct ulist* tmp = stack->link;
 				tmp = (struct ulist*)malloc(sizeof(struct ulist*));
@@ -882,15 +887,21 @@ struct ulist* calculate(struct ulist* ulist){
 				tmp->type = stack->type;
 				tmp->link = stack;
 				stack = tmp;
+				ulist = ulist->link;
+
 			}else if(equal("drop", ulist->value.str)){
 				struct ulist* tmp = stack;
 				stack = stack->link;
+				ulist = ulist->link;
+
 			}else if(equal("swap", ulist->value.str)){
 				struct ulist* tmp1 = stack->link;
 				struct ulist* tmp2 = stack;
 				tmp2->link = tmp1->link;
 				tmp1->link = tmp2;
 				stack = tmp1;
+				ulist = ulist->link;
+
 			}else if(equal("null", ulist->value.str)){
 				struct ulist* tmp1 = (struct ulist*)malloc(sizeof(struct ulist*));
 				struct ulist* tmp2 = stack;
@@ -899,49 +910,46 @@ struct ulist* calculate(struct ulist* ulist){
 				else tmp1->value.str = strcopy("false");
 				tmp1->type = 0;
 				stack = tmp1;
+				ulist = ulist->link;
 				
 			}else if(equal("first", ulist->value.str)){
 				stack->value.link->link = stack->link;
 				stack = stack->value.link;
+				ulist = ulist->link;
+
 
 			}else if(equal("rest", ulist->value.str)){
 				stack->value.link = stack->value.link->link;
+				ulist = ulist->link;
 
 			}else if(equal("cons", ulist->value.str)){
 				struct ulist* tmp1 = stack->link;
 				stack->link = stack->link->link;
 				tmp1->link = stack->value.link;
 				stack->value.link = tmp1;
+				ulist = ulist->link;
 
 			}else if(equal("i", ulist->value.str)){
-				struct ulist* decoy = (struct ulist*)malloc(sizeof(struct ulist*));
-				decoy->link = concatUlist(stack->value.link, ulist->link);
-				ulist = decoy;
+				ulist = concatUlist(stack->value.link, ulist->link);
 				stack= stack->link;
 							
 				
 			}else if(equal("dip", ulist->value.str)){
 				struct ulist* tmp1 = stack->link;
-				struct ulist* decoy = (struct ulist*)malloc(sizeof(struct ulist*));
 				struct ulist* tmp2 = stack;
 				stack = stack->link->link;
 				tmp1->link = NULL;
-				decoy->link = concatUlist(concatUlist(tmp2->value.link, tmp1), ulist->link);
-				ulist = decoy;
+				ulist = concatUlist(concatUlist(tmp2->value.link, tmp1), ulist->link);
 				
 
 			}else if(equal("if", ulist->value.str)){
-				struct ulist* decoy = (struct ulist*)malloc(sizeof(struct ulist*));
 				if(equal("true", stack->link->link->value.str)){
-					decoy->link = concatUlist(stack->link->value.link, ulist->link);
-					ulist = decoy;
+					ulist = concatUlist(stack->link->value.link, ulist->link);
 					stack = stack->link->link->link;
 				}else if(equal("false", stack->link->link->value.str)){
-					decoy->link = concatUlist(stack->value.link, ulist->link);
-					ulist = decoy;
+					ulist = concatUlist(stack->value.link, ulist->link);
 					stack = stack->link->link->link;
 				}
-				// decoy->link = stack->value.link;
 			}else if(equal("def", ulist->value.str)){
 				struct ulist* tmp1 = stack->link;
 				struct ulist* tmp2 = stack;
@@ -949,22 +957,16 @@ struct ulist* calculate(struct ulist* ulist){
 				tmp1->link = tmp2;
 				tmp2->link = functions;
 				functions = tmp1;
-				// printulist(functions, 0);
+				ulist = ulist->link;
 				
 
 			}else{
 				if(functionsSearch(ulist->value.str, functions)){
-					struct ulist* decoy = (struct ulist*)malloc(sizeof(struct ulist*));
-					decoy->link = concatUlist(copyUlist(getFunction(ulist->value.str, functions)), ulist->link);
-					ulist = decoy;
-
-
+					ulist = concatUlist(copyUlist(getFunction(ulist->value.str, functions)), ulist->link);
 				}else{
-				struct ulist* tmp;
-				tmp = (struct ulist*)malloc(sizeof(struct ulist*));
+				struct ulist* tmp = ulist;
+				ulist = ulist->link;
 				tmp->link = stack;
-				tmp->value.str = ulist->value.str;
-				tmp->type = 0;
 				stack = tmp;
 			}
 			}
@@ -974,18 +976,13 @@ struct ulist* calculate(struct ulist* ulist){
 
 
 		}else{
-			struct ulist* tmp;
-			// stack = ulist
-			
-			tmp = (struct ulist*)malloc(sizeof(struct ulist*));
+			struct ulist* tmp = ulist;
+			ulist = ulist->link;
 			tmp->link = stack;
-			tmp->value.link = ulist->value.link;
-			tmp->type = 1;
 			stack = tmp;
-
+			
 
 		}
-		ulist = ulist->link;
 	}
 	return swapUpperUlist(stack);
 }
