@@ -30,19 +30,19 @@ int equal(char*, char*);
 char* moveleft(char*);
 
 void myfree(void* a, int linen, const char* caller){
-    printf("free've been called from line:%d, caller name :%s\n", linen, caller);
+    // printf("free've been called from line:%d, caller name :%s\n", linen, caller);
     free(a);
     freecounter++;
 }
 
 void* mymalloc(int n, int linen, const char* caller){
-    printf("malloc've been called from line:%d, caller name :%s\n", linen, caller);
+    // printf("malloc've been called from line:%d, caller name :%s\n", linen, caller);
     malloccounter++;
     return malloc(n);
 }
 
-// #define free(n) myfree(n, __LINE__, __FUNCTION__)
-// #define malloc(n) mymalloc(n, __LINE__, __FUNCTION__)
+#define free(n) myfree(n, __LINE__, __FUNCTION__)
+#define malloc(n) mymalloc(n, __LINE__, __FUNCTION__)
 
 int stringlen(char s[]){
     int r = 0;
@@ -403,7 +403,7 @@ char* dispatchmult(char* s1, char* s2){
     }
 }
 
-char* dispatchsub(char* s1, char* s2){
+char* ds(char* s1, char* s2){
     char* ns;
     int sign1 = 0;
     int sign2 = 0;
@@ -454,6 +454,49 @@ char* dispatchsub(char* s1, char* s2){
     }
 
 }
+
+
+char* dispatchsub(char* s1, char* s2){
+	char* absoluteValue1;
+	char* absoluteValue2;
+	char* result;
+	int sign1 =0;
+	int sign2 =0;
+	if(s1[0]=='-'){
+		sign1 =1;
+		absoluteValue1 = moveleftnf(s1);
+	}else absoluteValue1 = strcopy(s1);
+
+	if(s2[0]=='-'){
+		sign2 = 1;
+		absoluteValue2 = moveleftnf(s2);
+	}else absoluteValue2 = strcopy(s2);
+	
+	if(sign1&&!sign2){
+		return addminus(add2(absoluteValue1, absoluteValue2));
+	}else if(!sign1&&sign2){
+		return add2(absoluteValue1, absoluteValue2);
+	}else if(sign1&&sign2){
+		if(compare(absoluteValue1, absoluteValue2) == absoluteValue1){
+			return addminus(substract(absoluteValue1, absoluteValue2));
+		}else if(compare(absoluteValue1, absoluteValue2) == absoluteValue2){
+			return substract(absoluteValue1, absoluteValue2);
+		}else{
+			return substract(absoluteValue1, absoluteValue2);
+		}
+	}else{
+		if(compare(absoluteValue1, absoluteValue2) == absoluteValue1){
+			return substract(absoluteValue1, absoluteValue2);
+		}else if(compare(absoluteValue1, absoluteValue2) == absoluteValue2){
+			return addminus(substract(absoluteValue1, absoluteValue2));
+		}else{
+			return substract(absoluteValue1, absoluteValue2);
+		}
+	}
+}
+
+
+
 
 char* substract(char* s1, char* s2){
     char* bigger = compare(s1,s2);
@@ -971,10 +1014,6 @@ struct ulist* calculate(struct ulist* ulist){
 			}
 			}
 
-
-
-
-
 		}else{
 			struct ulist* tmp = ulist;
 			ulist = ulist->link;
@@ -991,32 +1030,47 @@ struct ulist* calculate(struct ulist* ulist){
 
 int main(){
 
-	char * buffer = 0;
-	long length;
-	FILE * f = fopen ("program.txt", "rb");
+	// char * buffer = 0;
+	// long length;
+	// FILE * f = fopen ("program.txt", "rb");
 
-	if (f)
-	{
-  		fseek (f, 0, SEEK_END);
-  		length = ftell (f);
-  		fseek (f, 0, SEEK_SET);
-  		buffer = malloc (length);
-  	if (buffer){
-    	fread (buffer, 1, length, f);
-  	}
-  	fclose (f);
-	}
+	// if (f)
+	// {
+ //  		fseek (f, 0, SEEK_END);
+ //  		length = ftell (f);
+ //  		fseek (f, 0, SEEK_SET);
+ //  		buffer = malloc (length);
+ //  	if (buffer){
+ //    	fread (buffer, 1, length, f);
+ //  	}
+ //  	fclose (f);
+	// }
 
-	if (buffer){
-		int i = 0;
-    // printulist(calculate(generateUlist(token(buffer))), 0);
-		while(buffer[i]){
-			// printf("%d\n", buffer[i]);
-			if(buffer[i] == 10) buffer [i] = 32;
-			i++;
-		}
-		printulist(calculate(generateUlist(token(buffer))), 0);
-	}
-    // printf("Malloc calls:%d Free calls:%d\n",malloccounter,freecounter);
+	// if (buffer){
+	// 	int i = 0;
+	// 	while(buffer[i]){
+	// 		if(buffer[i] == 10) buffer [i] = 32;
+	// 		i++;
+	// 	}
+	// 	printulist(calculate(generateUlist(token(buffer))), 0);
+	// }
+	// printf("%s", dispatchadd(strcopy("-3"), strcopy("2")));
+    // printf("0=%s\n", dispatchsub(strcopy("3"), strcopy("3")));
+    // printf("6=%s\n", ds(strcopy("3"), strcopy("-3")));
+    // printf("-6=%s\n", ds(strcopy("-3"), strcopy("3")));
+    // printf("0=%s\n", ds(strcopy("-3"), strcopy("-3")));
+    // printf("5=%s\n", ds(strcopy("10"), strcopy("5")));
+    // printf("15=%s\n", ds(strcopy("10"), strcopy("-5")));
+    // printf("-15=%s\n", ds(strcopy("-10"), strcopy("5")));
+    // printf("-5=%s\n", ds(strcopy("-10"), strcopy("-5")));
+    // printf("-5=%s\n", ds(strcopy("5"), strcopy("10")));
+    // printf("15=%s\n", ds(strcopy("5"), strcopy("-10")));
+    // printf("-15=%s\n", ds(strcopy("-5"), strcopy("10")));
+    // printf("5=%s\n", ds(strcopy("-5"), strcopy("-10")));
+    char* a = dispatchsub("-5", "-10");
+    free(a);
+
+    printf("\nMalloc calls:%d Free calls:%d\n",malloccounter,freecounter);
+
     return 0;
 }
