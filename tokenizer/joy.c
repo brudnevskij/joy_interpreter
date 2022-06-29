@@ -975,11 +975,15 @@ struct ulist* calculate(struct ulist* ulist){
 
 		}else{
 			struct ulist* tmp;
+			// stack = ulist
+			
 			tmp = (struct ulist*)malloc(sizeof(struct ulist*));
 			tmp->link = stack;
 			tmp->value.link = ulist->value.link;
 			tmp->type = 1;
 			stack = tmp;
+
+
 		}
 		ulist = ulist->link;
 	}
