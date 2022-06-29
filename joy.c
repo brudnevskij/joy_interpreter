@@ -880,6 +880,26 @@ struct ulist* concatUlist(struct ulist* start, struct ulist* end){
 	return start;
 }
 
+struct ulist* addToUlist(struct ulist* ulist, void* value, int type){
+	if(type){
+		struct ulist* link = (struct ulist*) value;
+		struct ulist* newMember = (struct ulist*)malloc(sizeof(struct ulist));
+		newMember->type = 1;
+		newMember->value.link = link;
+		newMember->link = ulist;
+		return newMember;
+
+	}else{
+		char* str = (char*) value;
+		struct ulist* newMember = (struct ulist*)malloc(sizeof(struct ulist));
+		newMember->type = 0;
+		newMember->value.str = str;
+		newMember->link = ulist;
+		return newMember;
+	}
+
+}
+
 struct ulist* calculate(struct ulist* ulist){
 
 	struct ulist* stack = NULL;
@@ -892,11 +912,7 @@ struct ulist* calculate(struct ulist* ulist){
 				struct ulist* tmp2 = stack ;//second addend
 
 				//sum
-				struct ulist* tmp3 = (struct ulist*)malloc(sizeof(struct ulist*));
-				tmp3->type = 0;
-				tmp3->value.str = dispatchadd(tmp1->value.str, tmp2->value.str);
-				tmp3->link = stack->link->link;
-				stack = tmp3;
+				stack = addToUlist(stack->link->link, dispatchadd(tmp1->value.str, tmp2->value.str), 0);
 
 				free(tmp1);
 				free(tmp2);
@@ -910,11 +926,7 @@ struct ulist* calculate(struct ulist* ulist){
 				struct ulist* tmp2 = stack ;//substrahend
 
 				//difference
-				struct ulist* tmp3 = (struct ulist*)malloc(sizeof(struct ulist*));//new member
-				tmp3->type = 0;
-				tmp3->value.str = dispatchsub(tmp1->value.str, tmp2->value.str);
-				tmp3->link = stack->link->link;
-				stack = tmp3;
+				stack =addToUlist(stack->link->link, dispatchsub(tmp1->value.str, tmp2->value.str), 0);
 
 				free(tmp1->value.str);
 				free(tmp2->value.str);
@@ -931,11 +943,7 @@ struct ulist* calculate(struct ulist* ulist){
 				struct ulist* tmp2 = stack ;//second factor
 
 				//product
-				struct ulist* tmp3 = (struct ulist*)malloc(sizeof(struct ulist*));
-				tmp3->type = 0;
-				tmp3->value.str = dispatchmult(tmp1->value.str, tmp2->value.str);
-				tmp3->link = stack->link->link;
-				stack = tmp3;
+				stack = addToUlist(stack->link->link, dispatchmult(tmp1->value.str, tmp2->value.str), 0);
 
 				free(tmp1);
 				free(tmp2);
@@ -946,15 +954,11 @@ struct ulist* calculate(struct ulist* ulist){
 
 			}else if(equal("dup", ulist->value.str)){
 				struct ulist* tmp = stack->link;
-				tmp = (struct ulist*)malloc(sizeof(struct ulist*));
 				if(stack->type){
-					tmp->value.link = copyUlist(stack->value.link);
+					stack = addToUlist(stack, copyUlist(stack->value.link), 1);
 				}else{
-					tmp->value.str = strcopy(stack->value.str);
+					stack = addToUlist(stack, strcopy(stack->value.str), 0);
 				}
-				tmp->type = stack->type;
-				tmp->link = stack;
-				stack = tmp;
 
 				tmp = ulist;
 				ulist = ulist->link;
@@ -984,21 +988,17 @@ struct ulist* calculate(struct ulist* ulist){
 				free(tmp);
 
 			}else if(equal("null", ulist->value.str)){
-				struct ulist* tmp1 = (struct ulist*)malloc(sizeof(struct ulist*));
-				struct ulist* tmp2 = stack;
+				struct ulist* tmp = stack;
 
-				tmp1->type = 0;
-				tmp1->link = stack->link;
-				if(stack->value.link == NULL)tmp1->value.str = strcopy("true");
-				else tmp1->value.str = strcopy("false");
-				stack = tmp1;
+				if(stack->value.link == NULL)stack = addToUlist( stack->link ,strcopy("true"), 0);
+				else stack = addToUlist( stack->link ,strcopy("false"), 0);
 
-				freeUlist(tmp2->value.link);
-				free(tmp2);
-				tmp2 = ulist;
+				freeUlist(tmp->value.link);
+				free(tmp);
+				tmp = ulist;
 				ulist = ulist->link;
-				free(tmp2->value.str);
-				free(tmp2);
+				free(tmp->value.str);
+				free(tmp);
 
 			}else if(equal("first", ulist->value.str)){
 				struct ulist* tmp1 = stack;
@@ -1134,7 +1134,7 @@ int main(){
 
 	char * buffer = 0;
 	long length;
-	FILE * f = fopen ("program.txt", "rb");
+	FILE * f = fopen ("test.txt", "rb");
 
 	if (f)
 	{
@@ -1158,7 +1158,8 @@ int main(){
 	}
 	
 	free(buffer);
-
+	// struct ulist* l = NULL;
+	// printulist(addToUlist(l, dispatchadd(strcopy("2"), strcopy("2")), 0), 0);
     printf("\nMalloc calls:%d Free calls:%d\n",malloccounter,freecounter);
 
     return 0;
