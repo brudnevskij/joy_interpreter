@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-
+#include <string.h>
 
 
 struct list{
@@ -840,11 +840,46 @@ struct ulist* addToUlist(struct ulist* ulist, void* value, int type){
 
 }
 
+
+struct ulist* fbinsearch(struct ulist** ar,char* target, int size){
+	int h = size - 1;
+	int l = 0;
+	int mid;
+	int index = 0;
+	while(l <= h){
+		mid = (h + l) / 2;
+		if(strcmp(ar[mid]->value.str, target) == 0){
+			return ar[mid];
+		}else if(strcmp(ar[mid]->value.str, target) > 0){
+			h = mid - 1;
+		}else if(strcmp(ar[mid]->value.str, target) < 0){
+			l = mid + 1;
+		}
+	}
+	return NULL;
+}
+
+struct ulist** finsert(struct ulist** functions,struct ulist* ulist, int size){
+	struct ulist** newFunctions = (struct ulist**)malloc(sizeof(struct ulist) * (size + 1));
+	int i = 0;
+	while(i < size && strcmp(functions[i]->value.str, ulist->value.str) < 0 ){
+		newFunctions[i] = functions[i];
+		i++;
+	}
+	newFunctions[i] = ulist;
+	for(i; i < size; i++){
+		newFunctions[i + 1] = functions[i];
+	}
+	free(functions);
+	return newFunctions;
+}
+
+
 struct ulist* calculate(struct ulist* ulist){
 
 	struct ulist* stack = NULL;
-	struct ulist* functions = NULL;
-
+	struct ulist** functions = malloc(sizeof(struct ulist));
+	int fsSize = 0;
 	while(ulist != NULL){
 		if(!ulist->type){
 			if(equal("+", ulist->value.str)){
@@ -1033,18 +1068,21 @@ struct ulist* calculate(struct ulist* ulist){
 				struct ulist* functionBody = stack;
 				stack = stack->link->link;
 				functionName->link = functionBody;
-				functionBody->link = functions;
-				functions = functionName;
+				functionBody->link = NULL;
+				functions = finsert(functions, functionName, fsSize);
+				fsSize ++;
+
 
 				functionName = ulist;
 				ulist = ulist->link;
+
 				free(functionName->value.str);
 				free(functionName);
-
+				
 			}else{
-				if(functionsSearch(ulist->value.str, functions)){
+				if(fbinsearch(functions, ulist->value.str, fsSize) != NULL){
 					struct ulist* tmp = ulist;
-					ulist = concatUlist(copyUlist(getFunction(ulist->value.str, functions)), ulist->link);
+					ulist = concatUlist(copyUlist(fbinsearch(functions, ulist->value.str, fsSize)->link->value.link), ulist->link);
 					free(tmp->value.str);
 					free(tmp);
 				}else{
@@ -1052,6 +1090,7 @@ struct ulist* calculate(struct ulist* ulist){
 				ulist = ulist->link;
 				tmp->link = stack;
 				stack = tmp;
+
 			}
 			}
 
@@ -1071,17 +1110,20 @@ struct ulist* calculate(struct ulist* ulist){
 		printf("\n");
 		printf("\n");
 	}
-	freeUlist(functions);
+	for(int i = 0; i < fsSize; i++){
+		freeUlist(functions[i]);
+	}
+	free(functions);
 	return swapUpperUlist(stack);
 }
 
 
 
-int main(){
+int main(int argc, char** argv){
 
 	char * buffer = 0;
 	long length;
-	FILE * f = fopen ("test.txt", "rb");
+	FILE * f = fopen (argv[1], "rb");
 
 	if (f)
 	{
@@ -1106,8 +1148,6 @@ int main(){
 	}
 	
 	free(buffer);
-	// struct ulist* l = NULL;
-	// printAndFreeUlist(addToUlist(l, dispatchadd(strcopy("2"), strcopy("2")), 0), 0);
     printf("\nMalloc calls:%d Free calls:%d\n",malloccounter,freecounter);
 
     return 0;

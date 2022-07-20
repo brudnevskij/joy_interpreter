@@ -7,5 +7,4 @@ map
 (uncons ( swap dup) dip ()cons cons (cons () swap dip drop) dip i swap map cons)
  if)
  def
-
 (1 2 3) (2 *) map
