@@ -269,8 +269,8 @@ void freelistnwords(struct list* list){
 char* compare(char* s1, char* s2){
     int len1 = stringlen(s1);
     int len2 = stringlen(s2);
-    if(len1> len2)return s1;
-    if(len2> len1)return s2;
+    if(len1 > len2)return s1;
+    if(len2 > len1)return s2;
     for(int i = 0; i<len1; i++){
 	if(s1[i]>s2[i])return s1;
 	if(s2[i]>s1[i])return s2;
@@ -281,14 +281,52 @@ char* compare(char* s1, char* s2){
 char* comparesm(char* s1, char* s2){
     int len1 = stringlen(s1);
     int len2 = stringlen(s2);
-    if(len1< len2)return s1;
-    if(len2< len1)return s2;
+    if(len1 < len2)return s1;
+    if(len2 < len1)return s2;
     for(int i = 0; i<len1; i++){
 	if(s1[i]>s2[i])return s2;
 	if(s2[i]>s1[i])return s1;
     }
     return NULL;
 }
+
+ int bigger(char* s1, char* s2){
+ 	int len1 = stringlen(s1);
+ 	int len2 = stringlen(s2);
+ 	if(len1 > len2)return 1;
+    if(len1 < len2)return 0;
+    for(int i = 0; i < len1;i++){
+    	if(s1[i] > s2[i])return 1;
+    	if(s1[i] < s2[i])return 0;
+    }
+
+    return 0;
+ }
+ int smaller(char* s1, char* s2){
+ 	int len1 = stringlen(s1);
+ 	int len2 = stringlen(s2);
+ 	if(len1 < len2)return 1;
+    if(len1 > len2)return 0;
+    for(int i = 0; i < len1; i++){
+    	if(s1[i] < s2[i])return 1;
+    	if(s1[i] > s2[i])return 0;
+    }
+    return 0;
+ }
+
+int eq(char* s1, char* s2){
+ 	int len1 = stringlen(s1);
+ 	int len2 = stringlen(s2);
+ 	if(len1 < len2)return 0;
+    if(len1 > len2)return 0;
+    for(int i = 0; i < len1; i++){
+    	if(s1[i] < s2[i])return 0;
+    	if(s1[i] > s2[i])return 0;
+    }
+    return 1;
+ }
+
+
 
 char* moveleft(char* s){
     int len = stringlen(s);
@@ -403,57 +441,7 @@ char* dispatchmult(char* s1, char* s2){
     }
 }
 
-char* ds(char* s1, char* s2){
-    char* ns;
-    int sign1 = 0;
-    int sign2 = 0;
-    char* comparer1 = moveleftnf(s1);
-    char* comparer2 = moveleftnf(s2);
-    if(s1[0]=='-')sign1 =1;
-    if(s2[0] == '-')sign2 = 1;
-    if(sign1 && sign2){
-	ns =substract(moveleft(s1), moveleft(s2));
-	if(compare(comparer1, comparer2) == comparer2){
-	    free(comparer1);
-	    free(comparer2);
-	    return ns;
-	}
-	if(compare(comparer1, comparer2) == comparer1){
-	    free(comparer1);
-	    free(comparer2);
-	    return addminus(ns);
-	}
-	free(comparer1);
-	free(comparer2);
-	return  ns;
-    }else if(sign1 && !sign2){
-	ns = add2(moveleft(s1), s2);
-	free(comparer1);
-	free(comparer2);
-	return addminus(ns);
-    }else if(!sign1 && sign2){
-	ns = add2(s1, moveleft(s2));
-	free(comparer1);
-	free(comparer2);
-	return ns;
-    }else{
-	ns =substract(s1, s2);
-	if(compare(comparer1, comparer2) == comparer2){
-	    free(comparer1);
-	    free(comparer2);
-	    return addminus(ns);
-	}
-	if(compare(comparer1, comparer2) == comparer1){
-	    free(comparer1);
-	    free(comparer2);
-	    return ns;
-	}
-	free(comparer1);
-	free(comparer2);
-	return  ns;
-    }
 
-}
 
 
 char* dispatchsub(char* s1, char* s2){
@@ -495,8 +483,78 @@ char* dispatchsub(char* s1, char* s2){
 	}
 }
 
+int dispatchbigger(char* s1, char* s2){
+	int sign1 = 0;
+	int sign2 = 0;
+	char* absoluteValue1;
+	char* absoluteValue2;
+
+	if(s1[0] == '-') sign1 = 1;
+	if(s2[0] == '-') sign2 = 1;
+	if(sign1&&sign2){
+		absoluteValue1 = moveleftnf(s1);
+		absoluteValue2 = moveleftnf(s2);
+		int r = bigger(absoluteValue1, absoluteValue2);
+		free(absoluteValue1);
+		free(absoluteValue2);
+		return r;
+	}else if(sign1&&!sign2){
+		return 0;
+	}else if(!sign1&&sign2){
+		return 1;
+	}else{
+		return bigger(s1, s2);
+	}
+}
+
+int dispatchsmaller(char* s1, char* s2){
+	int sign1 = 0;
+	int sign2 = 0;
+	char* absoluteValue1;
+	char* absoluteValue2;
+
+	if(s1[0] == '-') sign1 = 1;
+	if(s2[0] == '-') sign2 = 1;
+	if(sign1&&sign2){
+		absoluteValue1 = moveleftnf(s1);
+		absoluteValue2 = moveleftnf(s2);
+		int r = smaller(absoluteValue1, absoluteValue2);
+		free(absoluteValue1);
+		free(absoluteValue2);
+		return r;
+	}else if(sign1&&!sign2){
+		return 1;
+	}else if(!sign1&&sign2){
+		return 0;
+	}else{
+		return smaller(s1, s2);
+	}
+}
 
 
+int dispatcheq(char* s1, char* s2){
+	int sign1 = 0;
+	int sign2 = 0;
+	char* absoluteValue1;
+	char* absoluteValue2;
+
+	if(s1[0] == '-') sign1 = 1;
+	if(s2[0] == '-') sign2 = 1;
+	if(sign1&&sign2){
+		absoluteValue1 = moveleftnf(s1);
+		absoluteValue2 = moveleftnf(s2);
+		int r = eq(absoluteValue1, absoluteValue2);
+		free(absoluteValue1);
+		free(absoluteValue2);
+		return r;
+	}else if(sign1&&!sign2){
+		return 0;
+	}else if(!sign1&&sign2){
+		return 0;
+	}else{
+		return eq(s1, s2);
+	}
+}
 
 char* substract(char* s1, char* s2){
     char* bigger = compare(s1,s2);
@@ -927,6 +985,60 @@ struct ulist* calculate(struct ulist* ulist){
 				free(tmp1->value.str);
 				free(tmp1);
 
+			}else if(equal(">", ulist->value.str)){
+				struct ulist* tmp1 = stack->link; // first operand
+				struct ulist* tmp2 = stack; // second operand
+				if(dispatchbigger(tmp1->value.str, tmp2->value.str)){
+					stack = addToUlist(stack->link->link, strcopy("true"), 0);
+				}else{
+					stack = addToUlist(stack->link->link, strcopy("false"), 0);
+				}
+
+				free(tmp1->value.str);
+				free(tmp2->value.str);
+				free(tmp1);
+				free(tmp2);
+				tmp1 = ulist;
+				ulist = ulist->link;
+				free(tmp1->value.str);
+				free(tmp1);
+
+			}else if(equal("<", ulist->value.str)){
+				struct ulist* tmp1 = stack->link; // first operand
+				struct ulist* tmp2 = stack; // second operand
+				if(dispatchsmaller(tmp1->value.str, tmp2->value.str)){
+					stack = addToUlist(stack->link->link, strcopy("true"), 0);
+				}else{
+					stack = addToUlist(stack->link->link, strcopy("false"), 0);
+				}
+
+				free(tmp1->value.str);
+				free(tmp2->value.str);
+				free(tmp1);
+				free(tmp2);
+				tmp1 = ulist;
+				ulist = ulist->link;
+				free(tmp1->value.str);
+				free(tmp1);
+
+			}else if(equal("==", ulist->value.str)){
+				struct ulist* tmp1 = stack->link; // first operand
+				struct ulist* tmp2 = stack; // second operand
+				if(dispatcheq(tmp1->value.str, tmp2->value.str)){
+					stack = addToUlist(stack->link->link, strcopy("true"), 0);
+				}else{
+					stack = addToUlist(stack->link->link, strcopy("false"), 0);
+				}
+
+				free(tmp1->value.str);
+				free(tmp2->value.str);
+				free(tmp1);
+				free(tmp2);
+				tmp1 = ulist;
+				ulist = ulist->link;
+				free(tmp1->value.str);
+				free(tmp1);
+
 			}else if(equal("dup", ulist->value.str)){
 				struct ulist* tmp = stack->link;
 				if(stack->type){
@@ -1147,6 +1259,7 @@ int main(int argc, char** argv){
 		printAndFreeUlist(calculate(generateUlist(token(buffer))), 0);
 	}
 	
+	// printf("%d\n", dispatchbigger(strcopy("2"), strcopy("1")));
 	free(buffer);
     printf("\nMalloc calls:%d Free calls:%d\n",malloccounter,freecounter);
 
