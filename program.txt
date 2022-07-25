@@ -7,4 +7,24 @@ map
 (uncons ( swap dup) dip ()cons cons (cons () swap dip drop) dip i swap map cons)
  if)
  def
-(1 2 3) (2 *) map
+
+filter ( swap dup null
+(swap drop)
+(swap dup
+(swap uncons
+(dup (
+swap cons
+) dip swap cons
+) dip
+) dip filter swap dip swap (cons)(swap drop)if
+)
+if) def
+
+qsort (dup null
+(drop)
+(dup uncons ((>) cons) dip swap filter (uncons swap dup ( (<) cons filter qsort)dip ) dip qsort )
+if
+) def
+
+
+(1 2 3 4 5 6 7 8 9 9 9 9 9  9 9 9 9 9 9 9 9 9 9 9 9 99 99 9 99 9 9  99 9 99 9 9 99 9 99 9 99 9) (99 *) map
