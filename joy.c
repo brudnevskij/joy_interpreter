@@ -1238,7 +1238,7 @@ int insertFunctionName(char* name){
 
 void insertFunction(int index, struct ulist* function){
 	int i = 0;
-
+	struct ulist** tmp;
 	struct ulist** newFunctions = malloc(sizeof(struct ulist*) * flength);
 	while(i < index){
 		newFunctions[i] = functions[i];
@@ -1249,10 +1249,21 @@ void insertFunction(int index, struct ulist* function){
 		newFunctions[i+1] = functions[i];
 		++i;
 	}
+	tmp = functions;
 	functions = newFunctions;
+	free(tmp);
 }
 
-
+void freeFunctions(){
+	for(int i = 0; i < flength; ++i){
+		if(functions[i]->type==1){
+			freeUlist(functions[i]);
+		}else if(functions[i]->type==-1){
+			free(functions[i]);
+		}
+	}
+	free(functions);
+}
 
 int main(int argc, char** argv){
 
@@ -1264,7 +1275,6 @@ int main(int argc, char** argv){
 	addS->value = addf;
 	addS->link = NULL;
 	insertFunction( insertFunctionName(strcopy("+")), addS);	
-
 	struct ulist* subS = malloc(sizeof(struct ulist *));
 	subS->type = -1;
 	subS->value = substractf;
@@ -1393,7 +1403,10 @@ int main(int argc, char** argv){
 	free(buffer);
 	for(int i = 0; i < flength; ++i)free(fNames[i]);
 	free(fNames);
-    printf("\nMalloc calls:%d Free calls:%d\n",malloccounter,freecounter);
+	// free(addS->value);
+	freeFunctions();
+	freeUlist(stack);
+    printf("\nMalloc calls:%d Free calls:%d\n",malloccounter,freecounter-2);
 
     return 0;
 }
