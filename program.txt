@@ -26,5 +26,4 @@ qsort (dup null
 if
 ) def
 
-
-(1 2 3) (2 *) map
+((1 2 3 4 5 6)(1 2 3 4 5 6)(1 2 3 4 5 6)) ((2 *)map)map ((8 <)filter)map 

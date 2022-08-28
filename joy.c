@@ -10,13 +10,21 @@ struct list* link;
 };
 
 struct ulist{
-    char type;
+    int type;
     void* value;
     struct ulist* link;
+	char* tmp;
 };
 
+struct ulist* stack ;
+struct ulist* expression;
+struct ulist** functions;
+int fsSize = 0;
+int flength = 0;
 int freecounter = 0;
 int malloccounter = 0;
+
+char** fNames;
 
 struct list* swaplist(struct list* list);
 
@@ -25,6 +33,9 @@ void freelistnwords(struct list*);
 char* substract(char*, char*);
 int equal(char*, char*);
 char* moveleft(char*);
+int insertFunctionName(char* );
+void insertFunction(int, struct ulist*);
+
 
 void myfree(void* a, int linen, const char* caller){
     // printf("free've been called from line:%d, caller name :%s\n", linen, caller);
@@ -167,19 +178,7 @@ char* mult(char s1[], char s2[]){
 }
 
 
-// struct list* addlist(struct list* start, char* value){
-//     struct list* nm;
-//     struct list* end;
-//     while(start!=NULL){
-// 	if(start->link==NULL)end = start;
-// 	start = start->link;
-//     }
-//     nm = (struct list*) malloc(sizeof(struct list));
-//     nm->word = value;
-//     nm->link = NULL;
-//     end->link = nm;
-//     return start;
-// }
+
 
 struct list* addlist2(struct list* start, char* value){
     struct list* newmember;
@@ -622,7 +621,6 @@ char* copytillend(char* s, int start, int end){
 
 
 
-
 struct list* token(char* s){
     struct list* nl = NULL;
     int i = -1;
@@ -838,6 +836,7 @@ struct ulist* generateUlist(struct list* list){
 
 	freelist(start);
 	return swapUpperUlist(newList);
+	return newList;
 }
 
 struct ulist* getLastElement(struct ulist* ulist){
@@ -847,25 +846,6 @@ struct ulist* getLastElement(struct ulist* ulist){
 	return ulist;
 }
 
-int functionsSearch(char* name, struct ulist* ulist){
-	while(ulist != NULL){
-		if(!ulist->type){
-			if(equal((char*)ulist->value, name))return 1;
-		}
-		ulist = ulist->link;
-	}
-	return 0;
-}
-
-struct ulist* getFunction(char* name, struct ulist* ulist){
-	while(ulist!= NULL){
-		if(!ulist->type){
-			if(equal(name, (char*)ulist->value)) return ulist->link->value;
-		}
-		ulist = ulist->link;
-	}
-	return ulist;
-}
 
 struct ulist* concatUlist(struct ulist* start, struct ulist* end){
 	struct ulist* lastEl = getLastElement(start);
@@ -893,25 +873,6 @@ struct ulist* addToUlist(struct ulist* ulist, void* value, int type){
 
 }
 
-
-struct ulist* fbinsearch(struct ulist** ar,char* target, int size){
-	int h = size - 1;
-	int l = 0;
-	int mid;
-	int index = 0;
-	while(l <= h){
-		mid = (h + l) / 2;
-		if(strcmp((char*)ar[mid]->value, target) == 0){
-			return ar[mid];
-		}else if(strcmp((char*)ar[mid]->value, target) > 0){
-			h = mid - 1;
-		}else if(strcmp((char*)ar[mid]->value, target) < 0){
-			l = mid + 1;
-		}
-	}
-	return NULL;
-}
-
 struct ulist** finsert(struct ulist** functions,struct ulist* ulist, int size){
 	struct ulist** newFunctions = (struct ulist**)malloc(sizeof(struct ulist) * (size + 1));
 	int i = 0;
@@ -927,306 +888,479 @@ struct ulist** finsert(struct ulist** functions,struct ulist* ulist, int size){
 	return newFunctions;
 }
 
+void addf(){
+	struct ulist* tmp1 = stack->link;//first addend
+	struct ulist* tmp2 = stack ;//second addend
 
-struct ulist* calculate(struct ulist* ulist){
+	//sum
+	stack = addToUlist(stack->link->link, dispatchadd(tmp1->value, tmp2->value), 0);
+	free(tmp1);
+	free(tmp2);
+	tmp1 = expression;
+	expression = expression->link;
+	free(tmp1->value);
+	free(tmp1);
 
-	struct ulist* stack = NULL;
-	struct ulist** functions = malloc(sizeof(struct ulist));
-	int fsSize = 0;
-	while(ulist != NULL){
-		if(!ulist->type){
-			if(equal("+", ulist->value)){
-				struct ulist* tmp1 = stack->link;//first addend
-				struct ulist* tmp2 = stack ;//second addend
-
-				//sum
-				stack = addToUlist(stack->link->link, dispatchadd(tmp1->value, tmp2->value), 0);
-
-				free(tmp1);
-				free(tmp2);
-				tmp1 = ulist;
-				ulist = ulist->link;
-				free(tmp1->value);
-				free(tmp1);
-
-			}else if(equal("-", ulist->value)){
-				struct ulist* tmp1 = stack->link;//minuend
-				struct ulist* tmp2 = stack ;//substrahend
-
-				//difference
-				stack =addToUlist(stack->link->link, dispatchsub(tmp1->value, tmp2->value), 0);
-
-				free(tmp1->value);
-				free(tmp2->value);
-				free(tmp1);
-				free(tmp2);
-
-				tmp1 = ulist;
-				ulist = ulist->link;
-				free(tmp1->value);
-				free(tmp1);
-
-			}else if(equal("*", ulist->value)){
-				struct ulist* tmp1 = stack->link;//first factor
-				struct ulist* tmp2 = stack ;//second factor
-
-				//product
-				stack = addToUlist(stack->link->link, dispatchmult(tmp1->value, tmp2->value), 0);
-
-				free(tmp1);
-				free(tmp2);
-				tmp1 = ulist;
-				ulist = ulist->link;
-				free(tmp1->value);
-				free(tmp1);
-
-			}else if(equal(">", ulist->value)){
-				struct ulist* tmp1 = stack->link; // first operand
-				struct ulist* tmp2 = stack; // second operand
-				if(dispatchbigger(tmp1->value, tmp2->value)){
-					stack = addToUlist(stack->link->link, strcopy("true"), 0);
-				}else{
-					stack = addToUlist(stack->link->link, strcopy("false"), 0);
-				}
-
-				free(tmp1->value);
-				free(tmp2->value);
-				free(tmp1);
-				free(tmp2);
-				tmp1 = ulist;
-				ulist = ulist->link;
-				free(tmp1->value);
-				free(tmp1);
-
-			}else if(equal("<", ulist->value)){
-				struct ulist* tmp1 = stack->link; // first operand
-				struct ulist* tmp2 = stack; // second operand
-				if(dispatchsmaller(tmp1->value, tmp2->value)){
-					stack = addToUlist(stack->link->link, strcopy("true"), 0);
-				}else{
-					stack = addToUlist(stack->link->link, strcopy("false"), 0);
-				}
-
-				free(tmp1->value);
-				free(tmp2->value);
-				free(tmp1);
-				free(tmp2);
-				tmp1 = ulist;
-				ulist = ulist->link;
-				free(tmp1->value);
-				free(tmp1);
-
-			}else if(equal("==", ulist->value)){
-				struct ulist* tmp1 = stack->link; // first operand
-				struct ulist* tmp2 = stack; // second operand
-				if(dispatcheq(tmp1->value, tmp2->value)){
-					stack = addToUlist(stack->link->link, strcopy("true"), 0);
-				}else{
-					stack = addToUlist(stack->link->link, strcopy("false"), 0);
-				}
-
-				free(tmp1->value);
-				free(tmp2->value);
-				free(tmp1);
-				free(tmp2);
-				tmp1 = ulist;
-				ulist = ulist->link;
-				free(tmp1->value);
-				free(tmp1);
-
-			}else if(equal("dup", ulist->value)){
-				struct ulist* tmp = stack->link;
-				if(stack->type){
-					stack = addToUlist(stack, copyUlist((struct ulist*)stack->value), 1);
-				}else{
-					stack = addToUlist(stack, strcopy(stack->value), 0);
-				}
-
-				tmp = ulist;
-				ulist = ulist->link;
-				free(tmp->value);
-				free(tmp);
-
-			}else if(equal("drop", ulist->value)){
-				struct ulist* tmp = stack;
-				stack = stack->link;
-				if(tmp->type)freeUlist(tmp->value);
-				else free(tmp->value);
-				free(tmp);
-				tmp = ulist;
-				ulist = ulist->link;
-				free(tmp->value);
-				free(tmp);
-
-			}else if(equal("swap", ulist->value)){
-				struct ulist* tmp = stack;
-				stack = stack->link;
-				tmp->link = stack->link;
-				stack->link = tmp;
-
-				tmp = ulist;
-				ulist = ulist->link;
-				free(tmp->value);
-				free(tmp);
-
-			}else if(equal("null", ulist->value)){
-				struct ulist* tmp = stack;
-
-				if(stack->value == NULL)stack = addToUlist( stack->link ,strcopy("true"), 0);
-				else stack = addToUlist( stack->link ,strcopy("false"), 0);
-
-				freeUlist(tmp->value);
-				free(tmp);
-				tmp = ulist;
-				ulist = ulist->link;
-				free(tmp->value);
-				free(tmp);
-
-			}else if(equal("first", ulist->value)){
-				struct ulist* tmp1 = stack;
-				struct ulist* tmp2 = ((struct ulist*)stack->value)->link;
-				((struct ulist*)stack->value)->link = stack->link;
-				stack = stack->value;
-
-				freeUlist(tmp2);
-				free(tmp1);
-				tmp1 = ulist;
-				ulist = ulist->link;
-				free(tmp1->value);
-				free(tmp1);
-
-			}else if(equal("rest", ulist->value)){
-				struct ulist* tmp = stack->value;
-				stack->value = ((struct ulist*)stack->value)->link;
-
-				tmp->link = NULL;
-				freeUlist(tmp);
-				tmp = ulist;
-				ulist = ulist->link;
-				free(tmp->value);
-				free(tmp);
-
-			}else if(equal("cons", ulist->value)){
-				struct ulist* tmp = stack->link;
-				stack->link = stack->link->link;
-				tmp->link = stack->value;
-				stack->value = tmp;
-
-				tmp = ulist;
-				ulist = ulist->link;
-				free(tmp->value);
-				free(tmp);
-			}else if(equal("i", ulist->value)){
-				struct ulist* tmp1 = stack;
-				struct ulist* tmp2 = ulist;
-				ulist = concatUlist((struct ulist*)stack->value, ulist->link);
-				stack= stack->link;
-
-				free(tmp1);
-				free(tmp2->value);
-				free(tmp2);						
-				
-			}else if(equal("dip", ulist->value)){
-				struct ulist* tmp1 = stack->link;
-				struct ulist* tmp2 = stack;
-				stack = stack->link->link;
-				tmp1->link = NULL;
-				tmp1 = concatUlist(tmp2->value, tmp1);
-				free(tmp2);
-				tmp2 = ulist;
-				ulist = concatUlist(tmp1, ulist->link);
-				free(tmp2->value);
-				free(tmp2);
-
-			}else if(equal("if", ulist->value)){
-				struct ulist* ifTrue = stack->link;
-				struct ulist* ifFalse = stack;
-				struct ulist* tmp;
-
-				if(equal("true", stack->link->link->value)){
-					tmp = ulist;
-					ulist = concatUlist(ifTrue->value, ulist->link);
-					free(tmp->value);
-					free(tmp);
-					tmp = stack->link->link;
-					stack = stack->link->link->link;
-
-					free(tmp->value);
-					free(tmp);
-					freeUlist(ifFalse->value);
-					free(ifFalse);
-					free(ifTrue);
-				}else if(equal("false", stack->link->link->value)){
-					tmp = ulist;
-					ulist = concatUlist(stack->value, ulist->link);
-					free(tmp->value);
-					free(tmp);
-					tmp = stack->link->link;
-					stack = stack->link->link->link;
-
-					free(tmp->value);
-					free(tmp);
-					freeUlist(ifTrue->value);
-					free(ifTrue);
-					free(ifFalse);
-				}
-			}else if(equal("def", ulist->value)){
-				struct ulist* functionName = stack->link;
-				struct ulist* functionBody = stack;
-				stack = stack->link->link;
-				functionName->link = functionBody;
-				functionBody->link = NULL;
-				functions = finsert(functions, functionName, fsSize);
-				fsSize ++;
+}
 
 
-				functionName = ulist;
-				ulist = ulist->link;
+void substractf(){
+	struct ulist* tmp1 = stack->link;//minuend
+	struct ulist* tmp2 = stack ;//substrahend
+	//difference
+	stack =addToUlist(stack->link->link, dispatchsub(tmp1->value, tmp2->value), 0);
 
-				free(functionName->value);
-				free(functionName);
-				
-			}else{
-				if(fbinsearch(functions, ulist->value, fsSize) != NULL){
-					struct ulist* tmp = ulist;
-					ulist = concatUlist(copyUlist(fbinsearch(functions, ulist->value, fsSize)->link->value), ulist->link);
-					free(tmp->value);
-					free(tmp);
-				}else{
-				struct ulist* tmp = ulist;
-				ulist = ulist->link;
-				tmp->link = stack;
-				stack = tmp;
+	free(tmp1->value);
+	free(tmp2->value);
+	free(tmp1);
+	free(tmp2);
+	tmp1 = expression;
+	expression = expression->link;
+	free(tmp1->value);
+	free(tmp1);
+}
 
-			}
-			}
+void multiplyf(){
+	struct ulist* tmp1 = stack->link;//first factor
+	struct ulist* tmp2 = stack ;//second factor
+	//product
+	stack = addToUlist(stack->link->link, dispatchmult(tmp1->value, tmp2->value), 0);
+	free(tmp1);
+	free(tmp2);
+	tmp1 = expression;
+	expression = expression->link;
+	free(tmp1->value);
+	free(tmp1);
+}
 
-		}else{
-			struct ulist* tmp = ulist;
-			ulist = ulist->link;
-			tmp->link = stack;
-			stack = tmp;
+void moref(){
+	struct ulist* tmp1 = stack->link; // first operand
+	struct ulist* tmp2 = stack; // second operand
+	if(dispatchbigger(tmp1->value, tmp2->value)){
+		stack = addToUlist(stack->link->link, strcopy("true"), 0);
+	}else{
+		stack = addToUlist(stack->link->link, strcopy("false"), 0);
+	}
+
+	free(tmp1->value);
+	free(tmp2->value);
+	free(tmp1);
+	free(tmp2);
+	tmp1 = expression;
+	expression = expression->link;
+	free(tmp1->value);
+	free(tmp1);
+}
+
+void lessf(){
+	struct ulist* tmp1 = stack->link; // first operand
+	struct ulist* tmp2 = stack; // second operand
+	if(dispatchsmaller(tmp1->value, tmp2->value)){
+		stack = addToUlist(stack->link->link, strcopy("true"), 0);
+	}else{
+		stack = addToUlist(stack->link->link, strcopy("false"), 0);
+	}
+
+	free(tmp1->value);
+	free(tmp2->value);
+	free(tmp1);
+	free(tmp2);
+	tmp1 = expression;
+	expression = expression->link;
+	free(tmp1->value);
+	free(tmp1);
+}
+
+void equalf(){
+	struct ulist* tmp1 = stack->link; // first operand
+	struct ulist* tmp2 = stack; // second operand
+	if(dispatcheq(tmp1->value, tmp2->value)){
+		stack = addToUlist(stack->link->link, strcopy("true"), 0);
+	}else{
+		stack = addToUlist(stack->link->link, strcopy("false"), 0);
+	}
+
+	free(tmp1->value);
+	free(tmp2->value);
+	free(tmp1);
+	free(tmp2);
+	tmp1 = expression;
+	expression = expression->link;
+	free(tmp1->value);
+	free(tmp1);
+
+}
+
+void dupf(){
+	struct ulist* tmp = stack->link;
+	if(stack->type){
+		stack = addToUlist(stack, copyUlist((struct ulist*)stack->value), 1);
+	}else{
+		stack = addToUlist(stack, strcopy(stack->value), 0);
+	}
+
+	tmp = expression;
+	expression = expression->link;
+	free(tmp->value);
+	free(tmp);
+}
+
+void dropf(){
+	struct ulist* tmp = stack;
+	stack = stack->link;
+	if(tmp->type)freeUlist(tmp->value);
+	else free(tmp->value);
+	free(tmp);
+	tmp = expression;
+	expression = expression->link;
+	free(tmp->value);
+	free(tmp);
+}
+
+void swapf(){
+	struct ulist* tmp = stack;
+	stack = stack->link;
+	tmp->link = stack->link;
+	stack->link = tmp;
+
+	tmp = expression;
+	expression = expression->link;
+	free(tmp->value);
+	free(tmp);
+}
+
+void nullf(){
+	struct ulist* tmp = stack;
+
+	if(stack->value == NULL)stack = addToUlist( stack->link ,strcopy("true"), 0);
+	else stack = addToUlist( stack->link ,strcopy("false"), 0);
+
+	freeUlist(tmp->value);
+	free(tmp);
+	tmp = expression;
+	expression = expression->link;
+	free(tmp->value);
+	free(tmp);
+}
+
+void firstf(){
+	struct ulist* tmp1 = stack;
+	struct ulist* tmp2 = ((struct ulist*)stack->value)->link;
+	((struct ulist*)stack->value)->link = stack->link;
+	stack = stack->value;
+
+	freeUlist(tmp2);
+	free(tmp1);
+	tmp1 = expression;
+	expression = expression->link;
+	free(tmp1->value);
+	free(tmp1);
+
+}
+
+void restf(){
+	struct ulist* tmp = stack->value;
+	stack->value = ((struct ulist*)stack->value)->link;
+
+	tmp->link = NULL;
+	freeUlist(tmp);
+	tmp = expression;
+	expression = expression->link;
+	free(tmp->value);
+	free(tmp);
+
+}
+
+void consf(){
+	struct ulist* tmp = stack->link;
+	stack->link = stack->link->link;
+	tmp->link = stack->value;
+	stack->value = tmp;
+
+	tmp = expression;
+	expression = expression->link;
+	free(tmp->value);
+	free(tmp);
+}
+void If(){
+	struct ulist* tmp1 = stack;
+	struct ulist* tmp2 = expression;
+	expression = concatUlist((struct ulist*)stack->value, expression->link);
+	stack= stack->link;
+
+	free(tmp1);
+	free(tmp2->value);
+	free(tmp2);						
+}
+void dipf(){
+	struct ulist* tmp1 = stack->link;
+	struct ulist* tmp2 = stack;
+	stack = stack->link->link;
+	tmp1->link = NULL;
+	tmp1 = concatUlist(tmp2->value, tmp1);
+	free(tmp2);
+	tmp2 = expression;
+	expression = concatUlist(tmp1, expression->link);
+	free(tmp2->value);
+	free(tmp2);
+}
+void iff(){
+struct ulist* ifTrue = stack->link;
+struct ulist* ifFalse = stack;
+struct ulist* tmp;
+
+if(equal("true", stack->link->link->value)){
+	tmp = expression;
+	expression = concatUlist(ifTrue->value, expression->link);
+	free(tmp->value);
+	free(tmp);
+	tmp = stack->link->link;
+	stack = stack->link->link->link;
+
+	free(tmp->value);
+	free(tmp);
+	freeUlist(ifFalse->value);
+	free(ifFalse);
+	free(ifTrue);
+}else if(equal("false", stack->link->link->value)){
+	tmp = expression;
+	expression = concatUlist(stack->value, expression->link);
+	free(tmp->value);
+	free(tmp);
+	tmp = stack->link->link;
+	stack = stack->link->link->link;
+
+	free(tmp->value);
+	free(tmp);
+	freeUlist(ifTrue->value);
+	free(ifTrue);
+	free(ifFalse);
+}
+}
+
+void deff(){
+	struct ulist* functionName = stack->link;
+	struct ulist* functionBody = stack;
+	stack = stack->link->link;
+	functionName->link = NULL;
+	functionBody->link = NULL;
+	insertFunction( insertFunctionName((char*)functionName->value), functionBody);
+	free(functionName);
+	functionName = expression;
+	expression = expression->link;
+	free(functionName->value);
+	free(functionName);
+
+}
 
 
+struct ulist* searchFunction(char* target){
+	int l = 0;
+	int r = flength - 1;
+	int m;
+	while(l <= r){
+		m = (r+l)/2;
+		if(equal(target, fNames[m])){
+			return functions[m];
+		}else if(strcmp(fNames[m], target) > 0){
+			r = m - 1;
+		}else if(strcmp(fNames[m], target) < 0){
+			l = m + 1;
 		}
-		printf("Stack: ");
+	}
+	return NULL;
+}
+
+struct ulist* calculate(char* buffer){
+	expression = generateUlist(token(buffer));
+	int operation = 0;
+	while(expression != NULL){
+		if(expression->type == 0){
+			struct ulist* f = searchFunction(expression->value);
+			if(f == NULL){
+				struct ulist* tmp = expression->link;
+				expression->link = stack;
+				stack = expression;
+				expression = tmp;
+			}else if(f->type == -1){
+				void (*ptr)() = f->value;
+				(*ptr)();
+			}else if(f->type == 1){
+				struct ulist* tmp = expression;
+				printf("\n");
+				printf("\n");
+				printUlist(f);
+				printf("\n");
+				printf("\n");
+				expression = concatUlist(copyUlist((struct ulist*)f->value), expression->link);
+				free(tmp->value);
+				free(tmp);
+			}
+		}else if(expression->type == 1){
+			struct ulist* tmp = expression->link;
+			expression->link = stack;
+			stack = expression;
+			expression = tmp;
+		}
+		operation++;
+		printf("operation: %d\n", operation);
+		printf("exp: ");
+		printUlist(expression);
+		printf("\n");
+		printf("stack: ");
 		printUlist(stack);
 		printf("\n");
-		printf("Expression: ");
-		printUlist(ulist);
-		printf("\n");
-		printf("\n");
 	}
-	for(int i = 0; i < fsSize; i++){
-		freeUlist(functions[i]);
+	return stack;
+}
+
+
+int insertFunctionName(char* name){
+	char** newFNames = malloc(sizeof(char*) * (flength + 1));
+	int i = 0;
+	int index;
+	while(i < flength && strcmp((char*)fNames[i], (char*)name) < 0 ){
+		newFNames[i] = fNames[i];
+		i++;
 	}
-	free(functions);
-	return swapUpperUlist(stack);
+	newFNames[i] = name;
+	index = i;
+	for(i; i < flength; i++){
+		newFNames[i + 1] = fNames[i];
+	}
+	char ** tmp;
+	tmp = fNames;
+	fNames = newFNames;
+	flength+=1;
+	free(tmp);
+	return index;
+}
+
+void insertFunction(int index, struct ulist* function){
+	int i = 0;
+
+	struct ulist** newFunctions = malloc(sizeof(struct ulist*) * flength);
+	while(i < index){
+		newFunctions[i] = functions[i];
+		++i;
+	}
+	newFunctions[index] = function;
+	while(i < flength-1){
+		newFunctions[i+1] = functions[i];
+		++i;
+	}
+	functions = newFunctions;
 }
 
 
 
 int main(int argc, char** argv){
+
+
+
+
+	struct ulist* addS = malloc(sizeof(struct ulist *));
+	addS->type = -1;
+	addS->value = addf;
+	addS->link = NULL;
+	insertFunction( insertFunctionName(strcopy("+")), addS);	
+
+	struct ulist* subS = malloc(sizeof(struct ulist *));
+	subS->type = -1;
+	subS->value = substractf;
+	subS->link = NULL;
+	insertFunction( insertFunctionName(strcopy("-")), subS);
+
+	struct ulist* multS = malloc(sizeof(struct ulist *));
+	multS->type = -1;
+	multS->value = multiplyf;
+	multS->link = NULL;
+	insertFunction( insertFunctionName(strcopy("*")), multS);
+
+	struct ulist* lessS = malloc(sizeof(struct ulist *));
+	lessS->type = -1;
+	lessS->value = lessf;
+	lessS->link = NULL;
+	insertFunction( insertFunctionName(strcopy("<")), lessS);
+
+	struct ulist* moreS = malloc(sizeof(struct ulist *));
+	moreS->type = -1;
+	moreS->value = moref;
+	moreS->link = NULL;
+	insertFunction( insertFunctionName(strcopy(">")), moreS);
+
+	struct ulist* eqS = malloc(sizeof(struct ulist *));
+	eqS->type = -1;
+	eqS->value = equalf;
+	eqS->link = NULL;
+	insertFunction( insertFunctionName(strcopy("==")), eqS);
+
+	struct ulist* dupS = malloc(sizeof(struct ulist *));
+	dupS->type = -1;
+	dupS->value = dupf;
+	dupS->link = NULL;
+	insertFunction( insertFunctionName(strcopy("dup")), dupS);
+
+	struct ulist* dropS = malloc(sizeof(struct ulist *));
+	dropS->type = -1;
+	dropS->value = dropf;
+	dropS->link = NULL;
+	insertFunction( insertFunctionName(strcopy("drop")), dropS);
+	
+	struct ulist* swapS = malloc(sizeof(struct ulist *));
+	swapS->type = -1;
+	swapS->value = swapf;
+	swapS->link = NULL;
+	insertFunction( insertFunctionName(strcopy("swap")), swapS);
+
+	struct ulist* nullS = malloc(sizeof(struct ulist *));
+	nullS->type = -1;
+	nullS->value = nullf;
+	nullS->link = NULL;
+	insertFunction( insertFunctionName(strcopy("null")), nullS);
+
+	struct ulist* firstS = malloc(sizeof(struct ulist *));
+	firstS->type = -1;
+	firstS->value = firstf;
+	firstS->link = NULL;
+	insertFunction( insertFunctionName(strcopy("first")), firstS);
+
+	struct ulist* restS = malloc(sizeof(struct ulist *));
+	restS->type = -1;
+	restS->value = restf;
+	restS->link = NULL;
+	insertFunction( insertFunctionName(strcopy("rest")), restS);
+
+	struct ulist* consS = malloc(sizeof(struct ulist *));
+	consS->type = -1;
+	consS->value = consf;
+	consS->link = NULL;
+	insertFunction( insertFunctionName(strcopy("cons")), consS);
+	
+	struct ulist* iStruct = malloc(sizeof(struct ulist *));
+	iStruct->type = -1;
+	iStruct->value = If;
+	iStruct->link = NULL;
+	insertFunction( insertFunctionName(strcopy("i")), iStruct);
+
+	struct ulist* ifStruct = malloc(sizeof(struct ulist *));
+	ifStruct->type = -1;
+	ifStruct->value = iff;
+	ifStruct->link = NULL;
+	insertFunction( insertFunctionName(strcopy("if")), ifStruct);
+
+	struct ulist* dipS = malloc(sizeof(struct ulist *));
+	dipS->type = -1;
+	dipS->value = dipf;
+	dipS->link = NULL;
+	insertFunction( insertFunctionName(strcopy("dip")), dipS);
+
+	struct ulist* defS = malloc(sizeof(struct ulist *));
+	defS->type = -1;
+	defS->value = deff;
+	defS->link = NULL;
+	insertFunction( insertFunctionName(strcopy("def")), defS);
+	
 
 	char * buffer = 0;
 	long length;
@@ -1250,12 +1384,15 @@ int main(int argc, char** argv){
 			if(buffer[i] == 10) buffer [i] = 32;
 			i++;
 		}
-		// printf("Output:");
-		printAndFreeUlist(calculate(generateUlist(token(buffer))), 0);
+		buffer[length-1] = '\0';
+		
+		printUlist(calculate(buffer));
 	}
 	
-	// printf("%d\n", dispatchbigger(strcopy("2"), strcopy("1")));
+
 	free(buffer);
+	for(int i = 0; i < flength; ++i)free(fNames[i]);
+	free(fNames);
     printf("\nMalloc calls:%d Free calls:%d\n",malloccounter,freecounter);
 
     return 0;
