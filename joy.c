@@ -139,10 +139,13 @@ char* multonechar(char* s, char c, int lens){
     }
 
     if(ns[0]<49||ns[0]>57){
+		char* tmp = (char*)malloc(sizeof(char)*lens+1);
+		char* tmp1 = ns;
 	for(int j = 0; j<lens+1; j++){
-	    ns[j]= ns[j+1];
+	    tmp[j]= ns[j+1];
 	}
-	ns = realloc(ns, lens);
+	ns = tmp;
+	free(tmp1);
     }
 
     return ns;
@@ -713,7 +716,7 @@ struct list* copyInside(struct list* list){
 		if(equal("(", list->word)){
 		struct list* tmp;
 		n += 1;
-		tmp = (struct list*) malloc(sizeof(list));
+		tmp = (struct list*) malloc(sizeof(struct list));
 			tmp->word = strcopy(list->word);
 			tmp->link = newList;
 			newList = tmp;
@@ -722,7 +725,7 @@ struct list* copyInside(struct list* list){
 		n -= 1;
 		if(n != 0){
 			struct list* tmp;
-			tmp = (struct list*) malloc(sizeof(list));
+			tmp = (struct list*) malloc(sizeof(struct list));
 			tmp->word = strcopy(list->word);
 			tmp->link = newList;
 			newList = tmp;
@@ -730,7 +733,7 @@ struct list* copyInside(struct list* list){
 		}
 		else{
 			struct list* tmp;
-			tmp = (struct list*) malloc(sizeof(list));
+			tmp = (struct list*) malloc(sizeof(struct list));
 			tmp->word = strcopy(list->word);
 			tmp->link = newList;
 			newList = tmp;
@@ -762,13 +765,13 @@ struct ulist* swapUpperUlist(struct ulist* ulist){
 
 	while(ulist != NULL){
 		if(ulist->type){
-			tmp = (struct ulist*)malloc(sizeof(ulist));
+			tmp = (struct ulist*)malloc(sizeof(struct ulist));
 			tmp->link = newUList;
 			tmp->value = ulist->value;
 			tmp->type = 1;
 			newUList = tmp;
 		}else{
-			tmp = (struct ulist*)malloc(sizeof(ulist));
+			tmp = (struct ulist*)malloc(sizeof(struct ulist));
 			tmp->link = newUList;
 			tmp->value = ulist->value;
 			tmp->type = 0;
@@ -786,14 +789,14 @@ struct ulist* copyUlist(struct ulist* ulist){
 	while(ulist != NULL){
 		if(ulist->type){
 			struct ulist* tmp;
-			tmp = (struct ulist*)malloc(sizeof(ulist));
+			tmp = (struct ulist*)malloc(sizeof(struct ulist));
 			tmp->type = 1;
 			tmp->value = copyUlist((struct ulist*)ulist->value);
 			tmp->link = nUlist;
 			nUlist = tmp;
 		}else{
 			struct ulist* tmp;
-			tmp = (struct ulist*)malloc(sizeof(ulist));
+			tmp = (struct ulist*)malloc(sizeof(struct ulist));
 			tmp->type = 0;
 			tmp->value = strcopy((char*)ulist->value);
 			tmp->link = nUlist;
@@ -1270,102 +1273,102 @@ int main(int argc, char** argv){
 
 
 
-	struct ulist* addS = malloc(sizeof(struct ulist *));
+	struct ulist* addS = malloc(sizeof(struct ulist));
 	addS->type = -1;
 	addS->value = addf;
 	addS->link = NULL;
 	insertFunction( insertFunctionName(strcopy("+")), addS);	
-	struct ulist* subS = malloc(sizeof(struct ulist *));
+	struct ulist* subS = malloc(sizeof(struct ulist));
 	subS->type = -1;
 	subS->value = substractf;
 	subS->link = NULL;
 	insertFunction( insertFunctionName(strcopy("-")), subS);
 
-	struct ulist* multS = malloc(sizeof(struct ulist *));
+	struct ulist* multS = malloc(sizeof(struct ulist));
 	multS->type = -1;
 	multS->value = multiplyf;
 	multS->link = NULL;
 	insertFunction( insertFunctionName(strcopy("*")), multS);
 
-	struct ulist* lessS = malloc(sizeof(struct ulist *));
+	struct ulist* lessS = malloc(sizeof(struct ulist));
 	lessS->type = -1;
 	lessS->value = lessf;
 	lessS->link = NULL;
 	insertFunction( insertFunctionName(strcopy("<")), lessS);
 
-	struct ulist* moreS = malloc(sizeof(struct ulist *));
+	struct ulist* moreS = malloc(sizeof(struct ulist));
 	moreS->type = -1;
 	moreS->value = moref;
 	moreS->link = NULL;
 	insertFunction( insertFunctionName(strcopy(">")), moreS);
 
-	struct ulist* eqS = malloc(sizeof(struct ulist *));
+	struct ulist* eqS = malloc(sizeof(struct ulist));
 	eqS->type = -1;
 	eqS->value = equalf;
 	eqS->link = NULL;
 	insertFunction( insertFunctionName(strcopy("==")), eqS);
 
-	struct ulist* dupS = malloc(sizeof(struct ulist *));
+	struct ulist* dupS = malloc(sizeof(struct ulist));
 	dupS->type = -1;
 	dupS->value = dupf;
 	dupS->link = NULL;
 	insertFunction( insertFunctionName(strcopy("dup")), dupS);
 
-	struct ulist* dropS = malloc(sizeof(struct ulist *));
+	struct ulist* dropS = malloc(sizeof(struct ulist));
 	dropS->type = -1;
 	dropS->value = dropf;
 	dropS->link = NULL;
 	insertFunction( insertFunctionName(strcopy("drop")), dropS);
 	
-	struct ulist* swapS = malloc(sizeof(struct ulist *));
+	struct ulist* swapS = malloc(sizeof(struct ulist));
 	swapS->type = -1;
 	swapS->value = swapf;
 	swapS->link = NULL;
 	insertFunction( insertFunctionName(strcopy("swap")), swapS);
 
-	struct ulist* nullS = malloc(sizeof(struct ulist *));
+	struct ulist* nullS = malloc(sizeof(struct ulist));
 	nullS->type = -1;
 	nullS->value = nullf;
 	nullS->link = NULL;
 	insertFunction( insertFunctionName(strcopy("null")), nullS);
 
-	struct ulist* firstS = malloc(sizeof(struct ulist *));
+	struct ulist* firstS = malloc(sizeof(struct ulist));
 	firstS->type = -1;
 	firstS->value = firstf;
 	firstS->link = NULL;
 	insertFunction( insertFunctionName(strcopy("first")), firstS);
 
-	struct ulist* restS = malloc(sizeof(struct ulist *));
+	struct ulist* restS = malloc(sizeof(struct ulist));
 	restS->type = -1;
 	restS->value = restf;
 	restS->link = NULL;
 	insertFunction( insertFunctionName(strcopy("rest")), restS);
 
-	struct ulist* consS = malloc(sizeof(struct ulist *));
+	struct ulist* consS = malloc(sizeof(struct ulist));
 	consS->type = -1;
 	consS->value = consf;
 	consS->link = NULL;
 	insertFunction( insertFunctionName(strcopy("cons")), consS);
 	
-	struct ulist* iStruct = malloc(sizeof(struct ulist *));
+	struct ulist* iStruct = malloc(sizeof(struct ulist));
 	iStruct->type = -1;
 	iStruct->value = If;
 	iStruct->link = NULL;
 	insertFunction( insertFunctionName(strcopy("i")), iStruct);
 
-	struct ulist* ifStruct = malloc(sizeof(struct ulist *));
+	struct ulist* ifStruct = malloc(sizeof(struct ulist));
 	ifStruct->type = -1;
 	ifStruct->value = iff;
 	ifStruct->link = NULL;
 	insertFunction( insertFunctionName(strcopy("if")), ifStruct);
 
-	struct ulist* dipS = malloc(sizeof(struct ulist *));
+	struct ulist* dipS = malloc(sizeof(struct ulist));
 	dipS->type = -1;
 	dipS->value = dipf;
 	dipS->link = NULL;
 	insertFunction( insertFunctionName(strcopy("dip")), dipS);
 
-	struct ulist* defS = malloc(sizeof(struct ulist *));
+	struct ulist* defS = malloc(sizeof(struct ulist));
 	defS->type = -1;
 	defS->value = deff;
 	defS->link = NULL;
@@ -1390,11 +1393,11 @@ int main(int argc, char** argv){
 
 	if (buffer){
 		int i = 0;
-		while(buffer[i]){
+		buffer[length-1] = '\0';
+		while(buffer[i]!='\0'){
 			if(buffer[i] == 10) buffer [i] = 32;
 			i++;
 		}
-		buffer[length-1] = '\0';
 		
 		printUlist(calculate(buffer));
 	}
