@@ -662,6 +662,8 @@ struct list* token(char* s){
     return temp;
 }
 
+
+
 void printAndFreeUlist(struct ulist* ulist, int i){
     int j = 0;
     while(ulist!= NULL){
@@ -1384,7 +1386,7 @@ int main(int argc, char** argv){
   		fseek (f, 0, SEEK_END);
   		length = ftell (f);
   		fseek (f, 0, SEEK_SET);
-  		buffer = malloc (length);
+  		buffer = malloc (length+1);
   	if (buffer){
     	fread (buffer, 1, length, f);
   	}
@@ -1393,9 +1395,16 @@ int main(int argc, char** argv){
 
 	if (buffer){
 		int i = 0;
-		buffer[length-1] = '\0';
+		buffer[length] = '\0';
 		while(buffer[i]!='\0'){
-			if(buffer[i] == 10) buffer [i] = 32;
+			if(buffer[i] < 32) buffer[i] = 32;
+			if(buffer[i] == '/'&& buffer[i+1] == '/'){
+				while(buffer[i+1]!= 10 && buffer[i+1]!= '\0' ){
+					buffer[i] = 32;
+					i++;
+				}
+				buffer[i] = 32;
+			}			
 			i++;
 		}
 		
