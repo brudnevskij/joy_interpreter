@@ -116,8 +116,6 @@ char* add2(char s1[], char s2[]){
 	}
 	r = realloc(r, reallen-1);
     }
-    free(s1);
-    free(s2);
     return r;
 }
 
@@ -167,13 +165,19 @@ char* multonten(char* s, int n){
 
 char* mult(char s1[], char s2[]){
     char* ns =strcopy("0");
+	char* tmp1;
+	char* tmp2;
     int lens1 = stringlen(s1);
     int lens2 = stringlen(s2);
     for(int i = 0; i< lens1; i++){
-	ns = add2(multonten(multonechar(s2, s1[lens1-1-i], lens2) , i),ns);
+		tmp1 = multonten(multonechar(s2, s1[lens1-1-i], lens2) , i);
+		tmp2 = ns;
+		ns = add2(tmp1, tmp2);
+		free(tmp1);
+		free(tmp2);
     }
-    free(s1);
-    free(s2);
+    // free(s1);
+    // free(s2);
     while(ns[0] =='0'&&stringlen(ns)>1){
 	ns = moveleft(ns);
     }
@@ -893,14 +897,12 @@ struct ulist** finsert(struct ulist** functions,struct ulist* ulist, int size){
 	return newFunctions;
 }
 
-void addf(){
-	struct ulist* tmp1 = stack->link;//first addend
-	struct ulist* tmp2 = stack ;//second addend
 
+
+void addf(){
+	struct ulist* tmp1;
 	//sum
-	stack = addToUlist(stack->link->link, dispatchadd(tmp1->value, tmp2->value), 0);
-	free(tmp1);
-	free(tmp2);
+	stack = addToUlist(stack, dispatchadd(stack->link->value, stack->value), 0);
 	tmp1 = expression;
 	expression = expression->link;
 	free(tmp1->value);
@@ -910,15 +912,9 @@ void addf(){
 
 
 void substractf(){
-	struct ulist* tmp1 = stack->link;//minuend
-	struct ulist* tmp2 = stack ;//substrahend
+	struct ulist* tmp1 = stack->link;
 	//difference
-	stack =addToUlist(stack->link->link, dispatchsub(tmp1->value, tmp2->value), 0);
-
-	free(tmp1->value);
-	free(tmp2->value);
-	free(tmp1);
-	free(tmp2);
+	stack =addToUlist(stack, dispatchsub(stack->link->value, stack->value), 0);
 	tmp1 = expression;
 	expression = expression->link;
 	free(tmp1->value);
@@ -926,12 +922,9 @@ void substractf(){
 }
 
 void multiplyf(){
-	struct ulist* tmp1 = stack->link;//first factor
-	struct ulist* tmp2 = stack ;//second factor
+	struct ulist* tmp1 = stack->link;
 	//product
-	stack = addToUlist(stack->link->link, dispatchmult(tmp1->value, tmp2->value), 0);
-	free(tmp1);
-	free(tmp2);
+	stack = addToUlist(stack, dispatchmult(stack->link->value, stack->value), 0);
 	tmp1 = expression;
 	expression = expression->link;
 	free(tmp1->value);
@@ -939,18 +932,12 @@ void multiplyf(){
 }
 
 void moref(){
-	struct ulist* tmp1 = stack->link; // first operand
-	struct ulist* tmp2 = stack; // second operand
-	if(dispatchbigger(tmp1->value, tmp2->value)){
-		stack = addToUlist(stack->link->link, strcopy("true"), 0);
+	struct ulist* tmp1 = stack->link;
+	if(dispatchbigger(stack->link->value, stack->value)){
+		stack = addToUlist(stack, strcopy("true"), 0);
 	}else{
-		stack = addToUlist(stack->link->link, strcopy("false"), 0);
+		stack = addToUlist(stack, strcopy("false"), 0);
 	}
-
-	free(tmp1->value);
-	free(tmp2->value);
-	free(tmp1);
-	free(tmp2);
 	tmp1 = expression;
 	expression = expression->link;
 	free(tmp1->value);
@@ -958,18 +945,12 @@ void moref(){
 }
 
 void lessf(){
-	struct ulist* tmp1 = stack->link; // first operand
-	struct ulist* tmp2 = stack; // second operand
-	if(dispatchsmaller(tmp1->value, tmp2->value)){
-		stack = addToUlist(stack->link->link, strcopy("true"), 0);
+	struct ulist* tmp1 = stack->link; 
+	if(dispatchsmaller(stack->link->value, stack->value)){
+		stack = addToUlist(stack, strcopy("true"), 0);
 	}else{
-		stack = addToUlist(stack->link->link, strcopy("false"), 0);
+		stack = addToUlist(stack, strcopy("false"), 0);
 	}
-
-	free(tmp1->value);
-	free(tmp2->value);
-	free(tmp1);
-	free(tmp2);
 	tmp1 = expression;
 	expression = expression->link;
 	free(tmp1->value);
@@ -978,22 +959,28 @@ void lessf(){
 
 void equalf(){
 	struct ulist* tmp1 = stack->link; // first operand
-	struct ulist* tmp2 = stack; // second operand
-	if(dispatcheq(tmp1->value, tmp2->value)){
-		stack = addToUlist(stack->link->link, strcopy("true"), 0);
+	if(dispatcheq(stack->link->value, stack->value)){
+		stack = addToUlist(stack, strcopy("true"), 0);
 	}else{
-		stack = addToUlist(stack->link->link, strcopy("false"), 0);
+		stack = addToUlist(stack, strcopy("false"), 0);
 	}
-
-	free(tmp1->value);
-	free(tmp2->value);
-	free(tmp1);
-	free(tmp2);
 	tmp1 = expression;
 	expression = expression->link;
 	free(tmp1->value);
 	free(tmp1);
 
+}
+
+void nullf(){
+	struct ulist* tmp = stack;
+
+	if(stack->value == NULL)stack = addToUlist( stack ,strcopy("true"), 0);
+	else stack = addToUlist( stack ,strcopy("false"), 0);
+
+	tmp = expression;
+	expression = expression->link;
+	free(tmp->value);
+	free(tmp);
 }
 
 void dupf(){
@@ -1028,20 +1015,6 @@ void swapf(){
 	tmp->link = stack->link;
 	stack->link = tmp;
 
-	tmp = expression;
-	expression = expression->link;
-	free(tmp->value);
-	free(tmp);
-}
-
-void nullf(){
-	struct ulist* tmp = stack;
-
-	if(stack->value == NULL)stack = addToUlist( stack->link ,strcopy("true"), 0);
-	else stack = addToUlist( stack->link ,strcopy("false"), 0);
-
-	freeUlist(tmp->value);
-	free(tmp);
 	tmp = expression;
 	expression = expression->link;
 	free(tmp->value);
@@ -1087,6 +1060,19 @@ void consf(){
 	free(tmp->value);
 	free(tmp);
 }
+
+void unconsf(){
+	struct ulist* tmp = ((struct ulist*)stack->value)->link;
+	((struct ulist*)stack->value)->link = stack->link;
+	stack->link = stack->value;
+	stack->value = tmp;
+
+	tmp = expression;
+	expression = expression->link;
+	free(tmp->value);
+	free(tmp);
+}
+
 void If(){
 	struct ulist* tmp1 = stack;
 	struct ulist* tmp2 = expression;
@@ -1179,6 +1165,15 @@ struct ulist* searchFunction(char* target){
 struct ulist* calculate(char* buffer){
 	expression = generateUlist(token(buffer));
 	int operation = 0;
+
+	printf("\noperation: %d\n", operation);
+		printf("exp: ");
+		printUlist(expression);
+		printf("\n");
+		printf("stack: ");
+		printUlist(stack);
+		printf("\n");
+	
 	while(expression != NULL){
 		if(expression->type == 0){
 			struct ulist* f = searchFunction(expression->value);
@@ -1208,7 +1203,7 @@ struct ulist* calculate(char* buffer){
 			expression = tmp;
 		}
 		operation++;
-		printf("operation: %d\n", operation);
+		printf("\noperation: %d\n", operation);
 		printf("exp: ");
 		printUlist(expression);
 		printf("\n");
@@ -1351,6 +1346,12 @@ int main(int argc, char** argv){
 	consS->value = consf;
 	consS->link = NULL;
 	insertFunction( insertFunctionName(strcopy("cons")), consS);
+
+	struct ulist* unconsS = malloc(sizeof(struct ulist));
+	unconsS->type = -1;
+	unconsS->value = unconsf;
+	unconsS->link = NULL;
+	insertFunction( insertFunctionName(strcopy("uncons")), unconsS);
 	
 	struct ulist* iStruct = malloc(sizeof(struct ulist));
 	iStruct->type = -1;
@@ -1380,6 +1381,19 @@ int main(int argc, char** argv){
 	char * buffer = 0;
 	long length;
 	FILE * f = fopen (argv[1], "rb");
+
+/*
+
+(1 2 3) uncons cons -> 1 (2 3) cons -> (1 2 3)
+               -> (1 2 3) 1 (2 3)
+(1 2) null -> (1 2) false
+
+
+*/
+
+
+
+
 
 	if (f)
 	{
@@ -1415,7 +1429,6 @@ int main(int argc, char** argv){
 	free(buffer);
 	for(int i = 0; i < flength; ++i)free(fNames[i]);
 	free(fNames);
-	// free(addS->value);
 	freeFunctions();
 	freeUlist(stack);
     printf("\nMalloc calls:%d Free calls:%d\n",malloccounter,freecounter-2);
