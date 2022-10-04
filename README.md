@@ -4,10 +4,10 @@ Joy is a stack based functional programming language. Joy interpreter computes l
 If value of item is name of a function, Interpreter calls the function, then function returns result to a stack.
 ### Content
 - [ Main syntax ](#mains)
--[Joy](#joy)
+- [Joy](#joy)
 - [ Joy functions ](#joyf)
--[ Modified Joy ](#modjoy)
--[Modified joy functions](#modjoyf)
+- [ Modified Joy ](#modjoy)
+- [Modified joy functions](#modjoyf)
 - [ How to Run ](#howtorun)
 <a name="mains"></a>
 ## Main syntax
