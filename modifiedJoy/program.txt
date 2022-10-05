@@ -2,3 +2,4 @@ one (null(false)(uncons null (cons)dip)if) def
 drop2 (swap drop) def
 count (null( 0)( uncons count (cons) dip 1 + drop2 drop2)if) def
 unlast ( one ( uncons swap)( uncons unlast (cons) dip)if) def
+(1 2 3) count

@@ -4,6 +4,7 @@
 #include <string.h>
 
 
+
 struct list{
 char* word;
 struct list* link;
@@ -16,25 +17,26 @@ struct ulist{
 	char* tmp;
 };
 
+struct list* swapList(struct list* list);
+void freeList(struct list*);
+char* subtract(char*, char*);
+int equal(char*, char*);
+char* moveLeft(char*);
+int insertFunctionName(char* );
+void insertFunction(int, struct ulist*);
+
+//global interpreter variabless
 struct ulist* stack ;
 struct ulist* expression;
 struct ulist** functions;
-int fsSize = 0;
+char** fNames;
 int flength = 0;
+char trace = 0;
 int freecounter = 0;
 int malloccounter = 0;
 
-char** fNames;
 
-struct list* swaplist(struct list* list);
 
-void freelist(struct list*);
-void freelistnwords(struct list*);
-char* substract(char*, char*);
-int equal(char*, char*);
-char* moveleft(char*);
-int insertFunctionName(char* );
-void insertFunction(int, struct ulist*);
 
 
 void myfree(void* a, int linen, const char* caller){
@@ -52,7 +54,7 @@ void* mymalloc(int n, int linen, const char* caller){
 #define free(n) myfree(n, __LINE__, __FUNCTION__)
 #define malloc(n) mymalloc(n, __LINE__, __FUNCTION__)
 
-int stringlen(char s[]){
+int stringLen(char s[]){
     int r = 0;
     while(s[r]!='\0'){
 	r++;
@@ -60,8 +62,8 @@ int stringlen(char s[]){
     return r;
 }
 
-char * strcopy(char s[]){
-    int len =stringlen(s);
+char * strCopy(char s[]){
+    int len =stringLen(s);
     int i = 0;
     char * ns = (char*) malloc(len*sizeof(char)+1);
     while(s[i]!='\0'){
@@ -73,9 +75,9 @@ char * strcopy(char s[]){
 }
 
 
-char* add2(char s1[], char s2[]){
-    int str1len = stringlen(s1);
-    int str2len = stringlen(s2);
+char* addStrings(char s1[], char s2[]){
+    int str1len = stringLen(s1);
+    int str2len = stringLen(s2);
     int reallen;
     int end1 =str1len-1;
     int end2 =str2len-1;
@@ -121,7 +123,8 @@ char* add2(char s1[], char s2[]){
     return r;
 }
 
-char* multonechar(char* s, char c, int lens){
+//multiplies string on one digit char
+char* multByChar(char* s, char c, int lens){
     char* ns;
     int cval = c-48;
     ns = (char*)malloc(lens*sizeof(char)+2);
@@ -152,9 +155,9 @@ char* multonechar(char* s, char c, int lens){
 }
 
 
-char* multonten(char* s, int n){
+char* multByTen(char* s, int n){
     char* ns;
-    int len = stringlen(s);
+    int len = stringLen(s);
     ns = (char*)malloc(len*sizeof(char)+n+1);
     ns[len+n]='\0';
     for(int i =0; i< len+n; i++){
@@ -166,24 +169,21 @@ char* multonten(char* s, int n){
 }
 
 char* mult(char s1[], char s2[]){
-    char* ns =strcopy("0");
-    int lens1 = stringlen(s1);
-    int lens2 = stringlen(s2);
+    char* ns =strCopy("0");
+    int lens1 = stringLen(s1);
+    int lens2 = stringLen(s2);
     for(int i = 0; i< lens1; i++){
-	ns = add2(multonten(multonechar(s2, s1[lens1-1-i], lens2) , i),ns);
+	ns = addStrings(multByTen(multByChar(s2, s1[lens1-1-i], lens2) , i),ns);
     }
     free(s1);
     free(s2);
-    while(ns[0] =='0'&&stringlen(ns)>1){
-	ns = moveleft(ns);
+    while(ns[0] =='0'&&stringLen(ns)>1){
+	ns = moveLeft(ns);
     }
     return ns;
 }
 
-
-
-
-struct list* addlist2(struct list* start, char* value){
+struct list* addToList(struct list* start, char* value){
     struct list* newmember;
     newmember = (struct list*)malloc(sizeof(struct list));
     newmember->word = value;
@@ -191,60 +191,18 @@ struct list* addlist2(struct list* start, char* value){
     return newmember;
 }
 
-void printlist(struct list* list){
-    struct list* temp = list;
-    while(list!=NULL){
-	printf("%s\n", list->word);
-	list = list->link;
-    }
-    freelistnwords(temp);
-}
-
-char* copytilspace(char* s, int start){
-    int counter = 0;
-    int i = start;
-    while((s[i] != ' ')&&(s[i] != '\0') ){
-	counter++;
-	i++;
-    }
-    char* ns;
-    ns = (char*)malloc(counter*sizeof(char)+1);
-    ns[counter]='\0';
-    i = start;
-    for(int j = 0; j < counter; j++){
-	ns[j] = s[start+j];
-    }
-    return ns;
-}
-
-struct list* split(char* s){
-    int i =-1;
-    int start = 0;
-    struct list* list = NULL;
-    struct list* temp;
-    do{
-	i++;
-	if(s[i]==' '|| s[i] == '\0'){
-	    list = addlist2(list, copytilspace(s, start));
-	    start = i+1;
-	}
-	
-	}while(s[i] != '\0');
-	temp = swaplist(list);
-	freelist(list);
-    return temp;
-}
-
-struct list* swaplist(struct list* list){
+//inverts list
+struct list* swapList(struct list* list){
     struct list* nl =NULL;
     while(list!=NULL){
-	nl = addlist2(nl, list->word);
+	nl = addToList(nl, list->word);
 	list = list->link;
     }
     return nl;
 }
 
-void freelist(struct list* list){
+//frees list structs, without freeing values
+void freeList(struct list* list){
     if(list == NULL)return;
     struct list* temp;
     do{
@@ -254,20 +212,10 @@ void freelist(struct list* list){
     }while(list!=NULL);
 }
 
-void freelistnwords(struct list* list){
-    if(list == NULL)return;
-    struct list* temp;
-    do{
-	temp = list;
-	list = list->link;
-	free(temp->word);
-	free(temp);
-    }while(list!=NULL);
-}
-
+//compares two strings returns biggest value
 char* compare(char* s1, char* s2){
-    int len1 = stringlen(s1);
-    int len2 = stringlen(s2);
+    int len1 = stringLen(s1);
+    int len2 = stringLen(s2);
     if(len1 > len2)return s1;
     if(len2 > len1)return s2;
     for(int i = 0; i<len1; i++){
@@ -277,9 +225,10 @@ char* compare(char* s1, char* s2){
     return NULL;
 }
 
+//compares two strings returns smallest value
 char* comparesm(char* s1, char* s2){
-    int len1 = stringlen(s1);
-    int len2 = stringlen(s2);
+    int len1 = stringLen(s1);
+    int len2 = stringLen(s2);
     if(len1 < len2)return s1;
     if(len2 < len1)return s2;
     for(int i = 0; i<len1; i++){
@@ -290,8 +239,8 @@ char* comparesm(char* s1, char* s2){
 }
 
  int bigger(char* s1, char* s2){
- 	int len1 = stringlen(s1);
- 	int len2 = stringlen(s2);
+ 	int len1 = stringLen(s1);
+ 	int len2 = stringLen(s2);
  	if(len1 > len2)return 1;
     if(len1 < len2)return 0;
     for(int i = 0; i < len1;i++){
@@ -302,8 +251,8 @@ char* comparesm(char* s1, char* s2){
     return 0;
  }
  int smaller(char* s1, char* s2){
- 	int len1 = stringlen(s1);
- 	int len2 = stringlen(s2);
+ 	int len1 = stringLen(s1);
+ 	int len2 = stringLen(s2);
  	if(len1 < len2)return 1;
     if(len1 > len2)return 0;
     for(int i = 0; i < len1; i++){
@@ -314,8 +263,8 @@ char* comparesm(char* s1, char* s2){
  }
 
 int eq(char* s1, char* s2){
- 	int len1 = stringlen(s1);
- 	int len2 = stringlen(s2);
+ 	int len1 = stringLen(s1);
+ 	int len2 = stringLen(s2);
  	if(len1 < len2)return 0;
     if(len1 > len2)return 0;
     for(int i = 0; i < len1; i++){
@@ -323,12 +272,11 @@ int eq(char* s1, char* s2){
     	if(s1[i] > s2[i])return 0;
     }
     return 1;
- }
+}
 
-
-
-char* moveleft(char* s){
-    int len = stringlen(s);
+//moves string on a 1 char left
+char* moveLeft(char* s){
+    int len = stringLen(s);
     char* ns = (char*) malloc(len*sizeof(char));
     ns[len-1]='\0';
     for(int i = 0; i<len-1; i++){
@@ -338,8 +286,8 @@ char* moveleft(char* s){
     return ns;
 }
 
-char* moveleftnf(char* s){
-    int len = stringlen(s);
+char* moveLeftNoFree(char* s){
+    int len = stringLen(s);
     char* ns = (char*) malloc(len*sizeof(char));
     ns[len-1]='\0';
     for(int i = 0; i<len-1; i++){
@@ -348,8 +296,9 @@ char* moveleftnf(char* s){
     return ns;
 }
 
-char* addminus(char* s){
-    int len = stringlen(s);
+//adds minus to beginning of str
+char* addMinus(char* s){
+    int len = stringLen(s);
     char* ns = (char*)malloc(sizeof(char)*len+2);
     ns[0] = '-';
     ns[len+1]='\0';
@@ -364,8 +313,8 @@ char* addminus(char* s){
 
 int equal(char* s1, char* s2){
     int i = 0;
-    int len1 = stringlen(s1);
-    int len2 = stringlen(s2);
+    int len1 = stringLen(s1);
+    int len2 = stringLen(s2);
     if(len1 != len2)return 0;
     while(s1[i] !='\0'&& s2[i]!='\0'){
 	if(s1[i]!= s2[i])return 0;
@@ -375,7 +324,9 @@ int equal(char* s1, char* s2){
 }
 
 
-char* dispatchadd(char* s1, char* s2){
+//dispatch functions allow arithmetics of interpreter to work with negative numbers
+
+char* dispatchAdd(char* s1, char* s2){
     char* ns;
     int sign1 = 0;
     int sign2 = 0;
@@ -383,67 +334,64 @@ char* dispatchadd(char* s1, char* s2){
     if(s1[0]=='-')sign1 =1;
     if(s2[0] == '-')sign2 = 1;
     if(sign1 && sign2){
-	ns = add2(moveleft(s1), moveleft(s2));
-	ns = addminus(ns);
+	ns = addStrings(moveLeft(s1), moveLeft(s2));
+	ns = addMinus(ns);
 	return ns;
     }
     else if(sign1 && !sign2){
-	comparer = moveleftnf(s1);
+	comparer = moveLeftNoFree(s1);
 	if(compare(comparer,s2) == comparer){
-	    ns = substract(moveleft(s1), s2);
-	    ns = addminus(ns);
+	    ns = subtract(moveLeft(s1), s2);
+	    ns = addMinus(ns);
 	    free(comparer);
 	    return ns;
 	}
 	free(comparer);
-	ns = substract(moveleft(s1), s2);
+	ns = subtract(moveLeft(s1), s2);
 	return ns;
     }
     else if(!sign1 && sign2){
-	    comparer = moveleftnf(s2);
+	    comparer = moveLeftNoFree(s2);
 	if(compare(s1,comparer) == comparer){
-	    ns = substract(moveleft(s2), s1);
-	    ns = addminus(ns);
+	    ns = subtract(moveLeft(s2), s1);
+	    ns = addMinus(ns);
 	    free(comparer);
 	    return ns;
 	}
-	ns = substract(moveleft(s2), s1);
+	ns = subtract(moveLeft(s2), s1);
 	free(comparer);
 	return ns;
     }
     else{
-	ns = add2(s1,s2);
+	ns = addStrings(s1,s2);
 	return ns;
     }
 }
 
-char* dispatchmult(char* s1, char* s2){
+char* dispatchMult(char* s1, char* s2){
     char* ns;
     int sign1 = 0;
     int sign2 = 0;
     if(s1[0]=='-')sign1 =1;
     if(s2[0] == '-')sign2 = 1;
     if(sign1 && sign2){
-	ns =mult(moveleft(s1), moveleft(s2));
+	ns =mult(moveLeft(s1), moveLeft(s2));
 	return ns;
     }else if(sign1 && !sign2){
-	ns = mult(moveleft(s1), s2);
+	ns = mult(moveLeft(s1), s2);
 	if(ns[0]=='0')return ns;
-	return addminus(ns);
+	return addMinus(ns);
     }else if(!sign1 && sign2){
-	ns = mult(s1, moveleft(s2));
+	ns = mult(s1, moveLeft(s2));
 	if(ns[0]=='0')return ns;
-	return addminus(ns);
+	return addMinus(ns);
     }else{
 	ns = mult(s1,s2);
 	return ns;
     }
 }
 
-
-
-
-char* dispatchsub(char* s1, char* s2){
+char* dispatchSub(char* s1, char* s2){
 	char* absoluteValue1;
 	char* absoluteValue2;
 	char* result;
@@ -451,38 +399,38 @@ char* dispatchsub(char* s1, char* s2){
 	int sign2 =0;
 	if(s1[0]=='-'){
 		sign1 =1;
-		absoluteValue1 = moveleftnf(s1);
-	}else absoluteValue1 = strcopy(s1);
+		absoluteValue1 = moveLeftNoFree(s1);
+	}else absoluteValue1 = strCopy(s1);
 
 	if(s2[0]=='-'){
 		sign2 = 1;
-		absoluteValue2 = moveleftnf(s2);
-	}else absoluteValue2 = strcopy(s2);
+		absoluteValue2 = moveLeftNoFree(s2);
+	}else absoluteValue2 = strCopy(s2);
 	
 	if(sign1&&!sign2){
-		return addminus(add2(absoluteValue1, absoluteValue2));
+		return addMinus(addStrings(absoluteValue1, absoluteValue2));
 	}else if(!sign1&&sign2){
-		return add2(absoluteValue1, absoluteValue2);
+		return addStrings(absoluteValue1, absoluteValue2);
 	}else if(sign1&&sign2){
 		if(compare(absoluteValue1, absoluteValue2) == absoluteValue1){
-			return addminus(substract(absoluteValue1, absoluteValue2));
+			return addMinus(subtract(absoluteValue1, absoluteValue2));
 		}else if(compare(absoluteValue1, absoluteValue2) == absoluteValue2){
-			return substract(absoluteValue1, absoluteValue2);
+			return subtract(absoluteValue1, absoluteValue2);
 		}else{
-			return substract(absoluteValue1, absoluteValue2);
+			return subtract(absoluteValue1, absoluteValue2);
 		}
 	}else{
 		if(compare(absoluteValue1, absoluteValue2) == absoluteValue1){
-			return substract(absoluteValue1, absoluteValue2);
+			return subtract(absoluteValue1, absoluteValue2);
 		}else if(compare(absoluteValue1, absoluteValue2) == absoluteValue2){
-			return addminus(substract(absoluteValue1, absoluteValue2));
+			return addMinus(subtract(absoluteValue1, absoluteValue2));
 		}else{
-			return substract(absoluteValue1, absoluteValue2);
+			return subtract(absoluteValue1, absoluteValue2);
 		}
 	}
 }
 
-int dispatchbigger(char* s1, char* s2){
+int dispatchBigger(char* s1, char* s2){
 	int sign1 = 0;
 	int sign2 = 0;
 	char* absoluteValue1;
@@ -491,8 +439,8 @@ int dispatchbigger(char* s1, char* s2){
 	if(s1[0] == '-') sign1 = 1;
 	if(s2[0] == '-') sign2 = 1;
 	if(sign1&&sign2){
-		absoluteValue1 = moveleftnf(s1);
-		absoluteValue2 = moveleftnf(s2);
+		absoluteValue1 = moveLeftNoFree(s1);
+		absoluteValue2 = moveLeftNoFree(s2);
 		int r = bigger(absoluteValue1, absoluteValue2);
 		free(absoluteValue1);
 		free(absoluteValue2);
@@ -506,7 +454,7 @@ int dispatchbigger(char* s1, char* s2){
 	}
 }
 
-int dispatchsmaller(char* s1, char* s2){
+int dispatchSmaller(char* s1, char* s2){
 	int sign1 = 0;
 	int sign2 = 0;
 	char* absoluteValue1;
@@ -515,8 +463,8 @@ int dispatchsmaller(char* s1, char* s2){
 	if(s1[0] == '-') sign1 = 1;
 	if(s2[0] == '-') sign2 = 1;
 	if(sign1&&sign2){
-		absoluteValue1 = moveleftnf(s1);
-		absoluteValue2 = moveleftnf(s2);
+		absoluteValue1 = moveLeftNoFree(s1);
+		absoluteValue2 = moveLeftNoFree(s2);
 		int r = smaller(absoluteValue1, absoluteValue2);
 		free(absoluteValue1);
 		free(absoluteValue2);
@@ -531,7 +479,7 @@ int dispatchsmaller(char* s1, char* s2){
 }
 
 
-int dispatcheq(char* s1, char* s2){
+int dispatchEq(char* s1, char* s2){
 	int sign1 = 0;
 	int sign2 = 0;
 	char* absoluteValue1;
@@ -540,8 +488,8 @@ int dispatcheq(char* s1, char* s2){
 	if(s1[0] == '-') sign1 = 1;
 	if(s2[0] == '-') sign2 = 1;
 	if(sign1&&sign2){
-		absoluteValue1 = moveleftnf(s1);
-		absoluteValue2 = moveleftnf(s2);
+		absoluteValue1 = moveLeftNoFree(s1);
+		absoluteValue2 = moveLeftNoFree(s2);
 		int r = eq(absoluteValue1, absoluteValue2);
 		free(absoluteValue1);
 		free(absoluteValue2);
@@ -555,11 +503,11 @@ int dispatcheq(char* s1, char* s2){
 	}
 }
 
-char* substract(char* s1, char* s2){
+char* subtract(char* s1, char* s2){
     char* bigger = compare(s1,s2);
     char* smaller = comparesm(s1,s2);
-    int len1 = stringlen(s1);
-    int len2 = stringlen(s2);
+    int len1 = stringLen(s1);
+    int len2 = stringLen(s2);
     int sent1;
     int sent2;
     int sub1;
@@ -576,11 +524,11 @@ char* substract(char* s1, char* s2){
 	smaller = s2;
 	sent2 = len2-1;
     }else{
-	result= (char*)malloc(stringlen(bigger)+1);
-	i = stringlen(bigger)-1;
+	result= (char*)malloc(stringLen(bigger)+1);
+	i = stringLen(bigger)-1;
 	result[i+1]='\0';
-	sent1= stringlen(bigger)-1;
-	sent2 = stringlen(smaller)-1;
+	sent1= stringLen(bigger)-1;
+	sent2 = stringLen(smaller)-1;
     }
     while( i >=0){
 	if(sent1>=0)sub1 = bigger[sent1]-48;
@@ -598,8 +546,8 @@ char* substract(char* s1, char* s2){
 	sent2--;
 	i--;
     }
-    while(result[0] =='0'&&stringlen(result)>1){
-	result = moveleft(result);
+    while(result[0] =='0'&&stringLen(result)>1){
+	result = moveLeft(result);
     }
 	free(s1);
 	free(s2);
@@ -608,7 +556,7 @@ char* substract(char* s1, char* s2){
 
 
 
-char* copytillend(char* s, int start, int end){
+char* copyUntilEnd(char* s, int start, int end){
     char* ns;
 
     int counter = end-start;
@@ -622,9 +570,8 @@ char* copytillend(char* s, int start, int end){
     return ns;
 }
 
-
-
-struct list* token(char* s){
+//splits text by ), (, \n. Trims spaces
+struct list* tokenize(char* s){
     struct list* nl = NULL;
     int i = -1;
     int start = 0;
@@ -633,22 +580,22 @@ struct list* token(char* s){
 	if(s[i] =='('){
 	    
 	    if(start!= i){
-		nl = addlist2(nl, copytillend(s, start, i));
+		nl = addToList(nl, copyUntilEnd(s, start, i));
 	    }
-	    nl = addlist2(nl, strcopy("("));
+	    nl = addToList(nl, strCopy("("));
 	    start=i+1;
         }
 	else if(s[i]==')'){
 	    
 	    if(start!= i){
-		nl = addlist2(nl, copytillend(s, start, i));
+		nl = addToList(nl, copyUntilEnd(s, start, i));
 	    }
-	    nl = addlist2(nl, strcopy(")"));
+	    nl = addToList(nl, strCopy(")"));
 	    start=i+1;
 	}else if(s[i]==' '||s[i]=='\0'){
 	    
 	    if(start!=i){
-		nl = addlist2(nl, copytillend(s, start, i));
+		nl = addToList(nl, copyUntilEnd(s, start, i));
 	    }
 	    while(s[i]==' '){
 	    start = i+1;
@@ -657,12 +604,10 @@ struct list* token(char* s){
 	    if(s[i]!='\0')i--;
 	}
     }while(s[i]!='\0');
-    struct list* temp = swaplist(nl);
-    freelist(nl);
+    struct list* temp = swapList(nl);
+    freeList(nl);
     return temp;
 }
-
-
 
 void printAndFreeUlist(struct ulist* ulist, int i){
     int j = 0;
@@ -697,8 +642,6 @@ void printUlist(struct ulist* ulist){
     }
 }
 
-
-
 void freeUlist(struct ulist* ulist){
 	while(ulist != NULL){
 		if(ulist->type) {freeUlist((struct ulist*)ulist->value);}
@@ -710,7 +653,8 @@ void freeUlist(struct ulist* ulist){
 	}
 }
 
-
+//functions skipInside() and copyInside() help to to tokenize raw text
+//by navigating over several levels paranteses
 struct list* copyInside(struct list* list){
 	int n = 1;
 	struct list* newList = NULL;
@@ -719,7 +663,7 @@ struct list* copyInside(struct list* list){
 		struct list* tmp;
 		n += 1;
 		tmp = (struct list*) malloc(sizeof(struct list));
-			tmp->word = strcopy(list->word);
+			tmp->word = strCopy(list->word);
 			tmp->link = newList;
 			newList = tmp;
 		}
@@ -728,7 +672,7 @@ struct list* copyInside(struct list* list){
 		if(n != 0){
 			struct list* tmp;
 			tmp = (struct list*) malloc(sizeof(struct list));
-			tmp->word = strcopy(list->word);
+			tmp->word = strCopy(list->word);
 			tmp->link = newList;
 			newList = tmp;
 		}
@@ -736,15 +680,15 @@ struct list* copyInside(struct list* list){
 		else{
 			struct list* tmp;
 			tmp = (struct list*) malloc(sizeof(struct list));
-			tmp->word = strcopy(list->word);
+			tmp->word = strCopy(list->word);
 			tmp->link = newList;
 			newList = tmp;
 		}
 		list = list->link;
 
 	}
-	struct list* tmp = swaplist(newList);
-	freelist(newList);
+	struct list* tmp = swapList(newList);
+	freeList(newList);
 	return tmp;
 }
 
@@ -800,7 +744,7 @@ struct ulist* copyUlist(struct ulist* ulist){
 			struct ulist* tmp;
 			tmp = (struct ulist*)malloc(sizeof(struct ulist));
 			tmp->type = 0;
-			tmp->value = strcopy((char*)ulist->value);
+			tmp->value = strCopy((char*)ulist->value);
 			tmp->link = nUlist;
 			nUlist = tmp;
 		}
@@ -839,7 +783,7 @@ struct ulist* generateUlist(struct list* list){
 		list = list->link;
 	}
 
-	freelist(start);
+	freeList(start);
 	return swapUpperUlist(newList);
 	return newList;
 }
@@ -893,12 +837,13 @@ struct ulist** finsert(struct ulist** functions,struct ulist* ulist, int size){
 	return newFunctions;
 }
 
+//Interpreter initial functions
 void addf(){
 	struct ulist* tmp1 = stack->link;//first addend
 	struct ulist* tmp2 = stack ;//second addend
 
 	//sum
-	stack = addToUlist(stack->link->link, dispatchadd(tmp1->value, tmp2->value), 0);
+	stack = addToUlist(stack->link->link, dispatchAdd(tmp1->value, tmp2->value), 0);
 	free(tmp1);
 	free(tmp2);
 	tmp1 = expression;
@@ -913,7 +858,7 @@ void substractf(){
 	struct ulist* tmp1 = stack->link;//minuend
 	struct ulist* tmp2 = stack ;//substrahend
 	//difference
-	stack =addToUlist(stack->link->link, dispatchsub(tmp1->value, tmp2->value), 0);
+	stack =addToUlist(stack->link->link, dispatchSub(tmp1->value, tmp2->value), 0);
 
 	free(tmp1->value);
 	free(tmp2->value);
@@ -929,7 +874,7 @@ void multiplyf(){
 	struct ulist* tmp1 = stack->link;//first factor
 	struct ulist* tmp2 = stack ;//second factor
 	//product
-	stack = addToUlist(stack->link->link, dispatchmult(tmp1->value, tmp2->value), 0);
+	stack = addToUlist(stack->link->link, dispatchMult(tmp1->value, tmp2->value), 0);
 	free(tmp1);
 	free(tmp2);
 	tmp1 = expression;
@@ -941,10 +886,10 @@ void multiplyf(){
 void moref(){
 	struct ulist* tmp1 = stack->link; // first operand
 	struct ulist* tmp2 = stack; // second operand
-	if(dispatchbigger(tmp1->value, tmp2->value)){
-		stack = addToUlist(stack->link->link, strcopy("true"), 0);
+	if(dispatchBigger(tmp1->value, tmp2->value)){
+		stack = addToUlist(stack->link->link, strCopy("true"), 0);
 	}else{
-		stack = addToUlist(stack->link->link, strcopy("false"), 0);
+		stack = addToUlist(stack->link->link, strCopy("false"), 0);
 	}
 
 	free(tmp1->value);
@@ -960,10 +905,10 @@ void moref(){
 void lessf(){
 	struct ulist* tmp1 = stack->link; // first operand
 	struct ulist* tmp2 = stack; // second operand
-	if(dispatchsmaller(tmp1->value, tmp2->value)){
-		stack = addToUlist(stack->link->link, strcopy("true"), 0);
+	if(dispatchSmaller(tmp1->value, tmp2->value)){
+		stack = addToUlist(stack->link->link, strCopy("true"), 0);
 	}else{
-		stack = addToUlist(stack->link->link, strcopy("false"), 0);
+		stack = addToUlist(stack->link->link, strCopy("false"), 0);
 	}
 
 	free(tmp1->value);
@@ -979,10 +924,10 @@ void lessf(){
 void equalf(){
 	struct ulist* tmp1 = stack->link; // first operand
 	struct ulist* tmp2 = stack; // second operand
-	if(dispatcheq(tmp1->value, tmp2->value)){
-		stack = addToUlist(stack->link->link, strcopy("true"), 0);
+	if(dispatchEq(tmp1->value, tmp2->value)){
+		stack = addToUlist(stack->link->link, strCopy("true"), 0);
 	}else{
-		stack = addToUlist(stack->link->link, strcopy("false"), 0);
+		stack = addToUlist(stack->link->link, strCopy("false"), 0);
 	}
 
 	free(tmp1->value);
@@ -1001,7 +946,7 @@ void dupf(){
 	if(stack->type){
 		stack = addToUlist(stack, copyUlist((struct ulist*)stack->value), 1);
 	}else{
-		stack = addToUlist(stack, strcopy(stack->value), 0);
+		stack = addToUlist(stack, strCopy(stack->value), 0);
 	}
 
 	tmp = expression;
@@ -1037,8 +982,8 @@ void swapf(){
 void nullf(){
 	struct ulist* tmp = stack;
 
-	if(stack->value == NULL)stack = addToUlist( stack->link ,strcopy("true"), 0);
-	else stack = addToUlist( stack->link ,strcopy("false"), 0);
+	if(stack->value == NULL)stack = addToUlist( stack->link ,strCopy("true"), 0);
+	else stack = addToUlist( stack->link ,strCopy("false"), 0);
 
 	freeUlist(tmp->value);
 	free(tmp);
@@ -1176,8 +1121,8 @@ struct ulist* searchFunction(char* target){
 	return NULL;
 }
 
-struct ulist* calculate(char* buffer){
-	expression = generateUlist(token(buffer));
+struct ulist* calculateNoTrace(char* buffer){
+	expression = generateUlist(tokenize(buffer));
 	int operation = 0;
 	while(expression != NULL){
 		if(expression->type == 0){
@@ -1191,12 +1136,45 @@ struct ulist* calculate(char* buffer){
 				void (*ptr)() = f->value;
 				(*ptr)();
 			}else if(f->type == 1){
-				struct ulist* tmp = expression;
-				printf("\n");
-				printf("\n");
-				printUlist(f);
-				printf("\n");
-				printf("\n");
+				struct ulist* tmp = expression;				
+				expression = concatUlist(copyUlist((struct ulist*)f->value), expression->link);
+				free(tmp->value);
+				free(tmp);
+			}
+		}else if(expression->type == 1){
+			struct ulist* tmp = expression->link;
+			expression->link = stack;
+			stack = expression;
+			expression = tmp;
+		}
+		operation++;		
+	}
+	return stack;
+}
+
+struct ulist* calculate(char* buffer){
+	expression = generateUlist(tokenize(buffer));
+	int operation = 0;
+	printf("\noperation: %d\n", operation);
+	printf("exp: ");
+	printUlist(expression);
+	printf("\n");
+	printf("stack: ");
+	printUlist(stack);
+	printf("\n");
+	while(expression != NULL){
+		if(expression->type == 0){
+			struct ulist* f = searchFunction(expression->value);
+			if(f == NULL){
+				struct ulist* tmp = expression->link;
+				expression->link = stack;
+				stack = expression;
+				expression = tmp;
+			}else if(f->type == -1){
+				void (*ptr)() = f->value;
+				(*ptr)();
+			}else if(f->type == 1){
+				struct ulist* tmp = expression;				
 				expression = concatUlist(copyUlist((struct ulist*)f->value), expression->link);
 				free(tmp->value);
 				free(tmp);
@@ -1218,7 +1196,6 @@ struct ulist* calculate(char* buffer){
 	}
 	return stack;
 }
-
 
 int insertFunctionName(char* name){
 	char** newFNames = malloc(sizeof(char*) * (flength + 1));
@@ -1274,113 +1251,113 @@ int main(int argc, char** argv){
 
 
 
-
+	//setting array of initial functions
 	struct ulist* addS = malloc(sizeof(struct ulist));
 	addS->type = -1;
 	addS->value = addf;
 	addS->link = NULL;
-	insertFunction( insertFunctionName(strcopy("+")), addS);	
+	insertFunction( insertFunctionName(strCopy("+")), addS);	
 	struct ulist* subS = malloc(sizeof(struct ulist));
 	subS->type = -1;
 	subS->value = substractf;
 	subS->link = NULL;
-	insertFunction( insertFunctionName(strcopy("-")), subS);
+	insertFunction( insertFunctionName(strCopy("-")), subS);
 
 	struct ulist* multS = malloc(sizeof(struct ulist));
 	multS->type = -1;
 	multS->value = multiplyf;
 	multS->link = NULL;
-	insertFunction( insertFunctionName(strcopy("*")), multS);
+	insertFunction( insertFunctionName(strCopy("*")), multS);
 
 	struct ulist* lessS = malloc(sizeof(struct ulist));
 	lessS->type = -1;
 	lessS->value = lessf;
 	lessS->link = NULL;
-	insertFunction( insertFunctionName(strcopy("<")), lessS);
+	insertFunction( insertFunctionName(strCopy("<")), lessS);
 
 	struct ulist* moreS = malloc(sizeof(struct ulist));
 	moreS->type = -1;
 	moreS->value = moref;
 	moreS->link = NULL;
-	insertFunction( insertFunctionName(strcopy(">")), moreS);
+	insertFunction( insertFunctionName(strCopy(">")), moreS);
 
 	struct ulist* eqS = malloc(sizeof(struct ulist));
 	eqS->type = -1;
 	eqS->value = equalf;
 	eqS->link = NULL;
-	insertFunction( insertFunctionName(strcopy("==")), eqS);
+	insertFunction( insertFunctionName(strCopy("==")), eqS);
 
 	struct ulist* dupS = malloc(sizeof(struct ulist));
 	dupS->type = -1;
 	dupS->value = dupf;
 	dupS->link = NULL;
-	insertFunction( insertFunctionName(strcopy("dup")), dupS);
+	insertFunction( insertFunctionName(strCopy("dup")), dupS);
 
 	struct ulist* dropS = malloc(sizeof(struct ulist));
 	dropS->type = -1;
 	dropS->value = dropf;
 	dropS->link = NULL;
-	insertFunction( insertFunctionName(strcopy("drop")), dropS);
+	insertFunction( insertFunctionName(strCopy("drop")), dropS);
 	
 	struct ulist* swapS = malloc(sizeof(struct ulist));
 	swapS->type = -1;
 	swapS->value = swapf;
 	swapS->link = NULL;
-	insertFunction( insertFunctionName(strcopy("swap")), swapS);
+	insertFunction( insertFunctionName(strCopy("swap")), swapS);
 
 	struct ulist* nullS = malloc(sizeof(struct ulist));
 	nullS->type = -1;
 	nullS->value = nullf;
 	nullS->link = NULL;
-	insertFunction( insertFunctionName(strcopy("null")), nullS);
+	insertFunction( insertFunctionName(strCopy("null")), nullS);
 
 	struct ulist* firstS = malloc(sizeof(struct ulist));
 	firstS->type = -1;
 	firstS->value = firstf;
 	firstS->link = NULL;
-	insertFunction( insertFunctionName(strcopy("first")), firstS);
+	insertFunction( insertFunctionName(strCopy("first")), firstS);
 
 	struct ulist* restS = malloc(sizeof(struct ulist));
 	restS->type = -1;
 	restS->value = restf;
 	restS->link = NULL;
-	insertFunction( insertFunctionName(strcopy("rest")), restS);
+	insertFunction( insertFunctionName(strCopy("rest")), restS);
 
 	struct ulist* consS = malloc(sizeof(struct ulist));
 	consS->type = -1;
 	consS->value = consf;
 	consS->link = NULL;
-	insertFunction( insertFunctionName(strcopy("cons")), consS);
+	insertFunction( insertFunctionName(strCopy("cons")), consS);
 	
 	struct ulist* iStruct = malloc(sizeof(struct ulist));
 	iStruct->type = -1;
 	iStruct->value = If;
 	iStruct->link = NULL;
-	insertFunction( insertFunctionName(strcopy("i")), iStruct);
+	insertFunction( insertFunctionName(strCopy("i")), iStruct);
 
 	struct ulist* ifStruct = malloc(sizeof(struct ulist));
 	ifStruct->type = -1;
 	ifStruct->value = iff;
 	ifStruct->link = NULL;
-	insertFunction( insertFunctionName(strcopy("if")), ifStruct);
+	insertFunction( insertFunctionName(strCopy("if")), ifStruct);
 
 	struct ulist* dipS = malloc(sizeof(struct ulist));
 	dipS->type = -1;
 	dipS->value = dipf;
 	dipS->link = NULL;
-	insertFunction( insertFunctionName(strcopy("dip")), dipS);
+	insertFunction( insertFunctionName(strCopy("dip")), dipS);
 
 	struct ulist* defS = malloc(sizeof(struct ulist));
 	defS->type = -1;
 	defS->value = deff;
 	defS->link = NULL;
-	insertFunction( insertFunctionName(strcopy("def")), defS);
+	insertFunction( insertFunctionName(strCopy("def")), defS);
 	
 
 	char * buffer = 0;
 	long length;
 	FILE * f = fopen (argv[1], "rb");
-
+	if(argc > 2)if(equal(argv[2], "-t")) trace = 1;
 	if (f)
 	{
   		fseek (f, 0, SEEK_END);
@@ -1407,8 +1384,8 @@ int main(int argc, char** argv){
 			}			
 			i++;
 		}
-		
-		printUlist(calculate(buffer));
+		if(trace)printUlist(calculate(buffer));
+		else printUlist(calculateNoTrace(buffer));
 	}
 	
 

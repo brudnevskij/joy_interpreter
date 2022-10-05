@@ -121,3 +121,7 @@ Funtion alias | What function does | Example
   ```
   ./a.out program.txt
   ```
+  If you wish to see calculation steps add -t option, after file name.
+  ```
+  ./a.out program.txt -t
+  ```
