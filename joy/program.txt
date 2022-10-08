@@ -39,7 +39,7 @@ if
 //(a), (a) count == 2
 permBase (dup uncons uncons (swap) dip cons cons () cons cons) def
 //(a)
-one (rest null) def
+one (dup null(swap drop)(rest null)if) def
 last (dup one (first)(rest last)if) def
 //(a) int
 appendToAll (dup null (swap drop)(uncons (swap dup(swap cons)dip)dip appendToAll cons)if) def
@@ -60,6 +60,6 @@ permut
 //(a)
 genPerms (dup count swap permut) def
 
-(1 2 3 4 5 6 7) genPerms
+7 (1 2 3 4 5 6 7) permut
 
 
