@@ -29,8 +29,6 @@ void freelistnwords(struct list*);
 char* subtract(char*, char*);
 int equal(char*, char*);
 char* moveLeft(char*);
-int insertFunctionName(char* );
-void insertFunction(int, struct ulist*);
 struct poolMember* searchStringPool(char*);
 struct poolMember* addToStringPool(char*, void*, int);
 void printUlistStringPool(struct ulist*);
@@ -38,10 +36,7 @@ void printUlistStringPool(struct ulist*);
 //global interpreter variabless
 struct ulist* stack ;
 struct ulist* expression;
-struct ulist** functions;
 struct poolMember* stringPool;
-char** fNames;
-int flength = 0;
 char trace = 0;
 int freecounter = 0;
 int malloccounter = 0;
@@ -212,40 +207,6 @@ char* mult(char s1[], char s2[]){
     return ns;
 }
 
-
-
-//
-//<----------------------------List operations---------------------------->
-//
-
-struct list* addToList(struct list* start, char* value){
-    struct list* newmember;
-    newmember = (struct list*)malloc(sizeof(struct list));
-    newmember->word = value;
-    newmember->link = start;
-    return newmember;
-}
-
-//inverts list
-struct list* swapList(struct list* list){
-    struct list* nl =NULL;
-    while(list!=NULL){
-	nl = addToList(nl, list->word);
-	list = list->link;
-    }
-    return nl;
-}
-
-//frees list structs, without freeing values
-void freeList(struct list* list){
-    if(list == NULL)return;
-    struct list* temp;
-    do{
-	temp = list;
-	list = list->link;
-	free(temp);
-    }while(list!=NULL);
-}
 
 //compares two strings returns biggest value
 char* compare(char* s1, char* s2){
@@ -604,6 +565,45 @@ char* copyUntilEnd(char* s, int start, int end){
     return ns;
 }
 
+
+
+
+
+
+//
+//<----------------------------List operations---------------------------->
+//
+
+struct list* addToList(struct list* start, char* value){
+    struct list* newmember;
+    newmember = (struct list*)malloc(sizeof(struct list));
+    newmember->word = value;
+    newmember->link = start;
+    return newmember;
+}
+
+//inverts list
+struct list* swapList(struct list* list){
+    struct list* nl =NULL;
+    while(list!=NULL){
+	nl = addToList(nl, list->word);
+	list = list->link;
+    }
+    return nl;
+}
+
+//frees list structs, without freeing values
+void freeList(struct list* list){
+    if(list == NULL)return;
+    struct list* temp;
+    do{
+	temp = list;
+	list = list->link;
+	free(temp);
+    }while(list!=NULL);
+}
+
+
 //splits text by ), (, \n. Trims spaces
 struct list* tokenize(char* s){
     struct list* nl = NULL;
@@ -678,8 +678,8 @@ void printUlist(struct ulist* ulist){
 
 void freeUlist(struct ulist* ulist){
 	while(ulist != NULL){
-		if(ulist->type) {freeUlist((struct ulist*)ulist->value);}
-		else {free((char *)ulist->value);}
+		if(ulist->type==1) {freeUlist((struct ulist*)ulist->value);}
+		else if(ulist->type==0){free((char *)ulist->value);}
 
         struct ulist* tmp = ulist;
 		ulist = ulist->link;
@@ -739,32 +739,7 @@ struct list* skipInside(struct list* list){
 	return list;
 }
 
-struct ulist* swapUpperUlist(struct ulist* ulist){
-	struct ulist* newUList = NULL;
-	struct ulist* tmp;			
-
-	while(ulist != NULL){
-		if(ulist->type){
-			tmp = (struct ulist*)malloc(sizeof(struct ulist));
-			tmp->link = newUList;
-			tmp->value = ulist->value;
-			tmp->type = 1;
-			newUList = tmp;
-		}else{
-			tmp = (struct ulist*)malloc(sizeof(struct ulist));
-			tmp->link = newUList;
-			tmp->value = ulist->value;
-			tmp->type = 0;
-			newUList = tmp;
-		}
-		tmp = ulist;
-		ulist = ulist->link;
-		free(tmp);
-	}
-	return newUList;
-}
-
-struct ulist* swupli(struct ulist* list)
+struct ulist* swapUpperUlist(struct ulist* list)
 {
 	struct ulist* newUList = NULL;
 	struct ulist* tmp;			
@@ -804,7 +779,7 @@ struct ulist* copyUlist(struct ulist* ulist){
 		}
 		ulist = ulist->link;
 	}
-	struct ulist* tmp = swupli(nUlist);
+	struct ulist* tmp = swapUpperUlist(nUlist);
 	return tmp;
 }
 
@@ -828,7 +803,7 @@ struct ulist* generateUlist(struct list* list){
 		}else{
 			struct ulist* tmp;
 			tmp = (struct ulist*)malloc(sizeof(struct ulist));
-			tmp->link = newList;//										intern
+			tmp->link = newList;
 			if(isNumber(list->word)){
 				tmp->value = list->word;
 				tmp->type = 0;
@@ -839,6 +814,8 @@ struct ulist* generateUlist(struct list* list){
 				{
 					ref = addToStringPool(list->word, NULL, str);
 					
+				}else{
+					free(list->word);
 				}
 				tmp->value = ref;
 			}
@@ -851,7 +828,7 @@ struct ulist* generateUlist(struct list* list){
 	}
 
 	freeList(start);
-	return swupli(newList);
+	return swapUpperUlist(newList);
 }
 
 struct ulist* getLastElement(struct ulist* ulist){
@@ -869,56 +846,25 @@ struct ulist* concatUlist(struct ulist* start, struct ulist* end){
 }
 
 struct ulist* addToUlist(struct ulist* ulist, void* value, int type){
-	// if(type == 1){
-	// 	struct ulist* link = (struct ulist*) value;
-	// 	struct ulist* newMember = (struct ulist*)malloc(sizeof(struct ulist));
-	// 	newMember->type = 1;
-	// 	newMember->value = link;
-	// 	newMember->link = ulist;
-	// 	return newMember;
-
-	// }else{
-	// 	char* str = (char*) value;
-	// 	struct ulist* newMember = (struct ulist*)malloc(sizeof(struct ulist));
-	// 	newMember->type = 0;
-	// 	newMember->value = str;
-	// 	newMember->link = ulist;
-	// 	return newMember;
-	// }
-	// struct ulist* link = (struct ulist*) value;
 	struct ulist* newMember = (struct ulist*)malloc(sizeof(struct ulist));
 	newMember->type = type;
 	newMember->value = value;
 	newMember->link = ulist;
 	return newMember;
-
 }
 
-struct ulist** finsert(struct ulist** functions,struct ulist* ulist, int size){
-	struct ulist** newFunctions = (struct ulist**)malloc(sizeof(struct ulist) * (size + 1));
-	int i = 0;
-	while(i < size && strcmp((char*)functions[i]->value, (char*)ulist->value) < 0 ){
-		newFunctions[i] = functions[i];
-		i++;
-	}
-	newFunctions[i] = ulist;
-	for(i; i < size; i++){
-		newFunctions[i + 1] = functions[i];
-	}
-	free(functions);
-	return newFunctions;
-}
 
+//
+//<----------------------------Interpreter functions---------------------------->
+//
 
 //Interpreter initial functions
 void addf(){
-	struct ulist* tmp1;
+	struct ulist* tmp1 = expression;
 	//sum
 	stack = addToUlist(stack, dispatchAdd(stack->link->value, stack->value), 0);
-	tmp1 = expression;
 	expression = expression->link;
-	// free(tmp1->value);
-	// free(tmp1);
+	free(tmp1);
 
 }
 
@@ -929,8 +875,7 @@ void substractf(){
 	stack =addToUlist(stack, dispatchSub(stack->link->value, stack->value), 0);
 	tmp1 = expression;
 	expression = expression->link;
-	// free(tmp1->value);
-	// free(tmp1);
+	free(tmp1);
 }
 
 void multiplyf(){
@@ -939,8 +884,7 @@ void multiplyf(){
 	stack = addToUlist(stack, dispatchMult(stack->link->value, stack->value), 0);
 	tmp1 = expression;
 	expression = expression->link;
-	// free(tmp1->value);
-	// free(tmp1);
+	free(tmp1);
 }
 
 void moref(){
@@ -952,8 +896,7 @@ void moref(){
 	}
 	tmp1 = expression;
 	expression = expression->link;
-	// free(tmp1->value);
-	// free(tmp1);
+	free(tmp1);
 }
 
 void lessf(){
@@ -965,8 +908,7 @@ void lessf(){
 	}
 	tmp1 = expression;
 	expression = expression->link;
-	// free(tmp1->value);
-	// free(tmp1);
+	free(tmp1);
 }
 
 void equalf(){
@@ -978,8 +920,7 @@ void equalf(){
 	}
 	tmp1 = expression;
 	expression = expression->link;
-	// free(tmp1->value);
-	// free(tmp1);
+	free(tmp1);
 
 }
 
@@ -991,8 +932,7 @@ void nullf(){
 
 	tmp = expression;
 	expression = expression->link;
-	// free(tmp->value);
-	// free(tmp);
+	free(tmp);
 }
 
 void dupf(){
@@ -1007,8 +947,7 @@ void dupf(){
 
 	tmp = expression;
 	expression = expression->link;
-	// free(tmp->value);
-	// free(tmp);
+	free(tmp);
 }
 
 void dropf(){
@@ -1019,8 +958,7 @@ void dropf(){
 	free(tmp);
 	tmp = expression;
 	expression = expression->link;
-	// free(tmp->value);
-	// free(tmp);
+	free(tmp);
 }
 
 void swapf(){
@@ -1031,8 +969,7 @@ void swapf(){
 
 	tmp = expression;
 	expression = expression->link;
-	// free(tmp->value);
-	// free(tmp);
+	free(tmp);
 }
 
 void firstf(){
@@ -1041,12 +978,11 @@ void firstf(){
 	((struct ulist*)stack->value)->link = stack->link;
 	stack = stack->value;
 
-	// freeUlist(tmp2);
-	// free(tmp1);
+	freeUlist(tmp2);
+	free(tmp1);
 	tmp1 = expression;
 	expression = expression->link;
-	// free(tmp1->value);
-	// free(tmp1);
+	free(tmp1);
 
 }
 
@@ -1058,8 +994,7 @@ void restf(){
 	freeUlist(tmp);
 	tmp = expression;
 	expression = expression->link;
-	// free(tmp->value);
-	// free(tmp);
+	free(tmp);
 
 }
 
@@ -1071,8 +1006,7 @@ void consf(){
 
 	tmp = expression;
 	expression = expression->link;
-	// free(tmp->value);
-	// free(tmp);
+	free(tmp);
 }
 
 void unconsf(){
@@ -1083,8 +1017,7 @@ void unconsf(){
 
 	tmp = expression;
 	expression = expression->link;
-	// free(tmp->value);
-	// free(tmp);
+	free(tmp);
 }
 
 void If(){
@@ -1093,9 +1026,8 @@ void If(){
 	expression = concatUlist((struct ulist*)stack->value, expression->link);
 	stack= stack->link;
 
-	// free(tmp1);
-	// free(tmp2->value);
-	// free(tmp2);						
+	free(tmp1);
+	free(tmp2);						
 }
 void dipf(){
 	struct ulist* tmp1 = stack->link;
@@ -1106,8 +1038,7 @@ void dipf(){
 	free(tmp2);
 	tmp2 = expression;
 	expression = concatUlist(tmp1, expression->link);
-	// free(tmp2->value);
-	// free(tmp2);
+	free(tmp2);
 }
 void iff(){
 	struct ulist* ifTrue = stack->link;
@@ -1118,28 +1049,24 @@ void iff(){
 		tmp = expression;
 		expression = concatUlist(ifTrue->value, expression->link);
 		// free(tmp->value);
-		// free(tmp);
-		tmp = stack->link->link;
-		stack = stack->link->link->link;
-
-		// free(tmp->value);
-		// free(tmp);
-		// freeUlist(ifFalse->value);
-		// free(ifFalse);
-		// free(ifTrue);
+		free(tmp);// if list cover
+		tmp = stack->link->link; // bool value
+		stack = stack->link->link->link; // element before bool value
+		free(tmp);
+		freeUlist(ifFalse->value);
+		free(ifFalse);
+		free(ifTrue);
 	}else if(equal("false", ((struct poolMember*)stack->link->link->value)->name)){
 		tmp = expression;
 		expression = concatUlist(ifFalse->value, expression->link);
-		// free(tmp->value);
-		// free(tmp);
-		tmp = stack->link->link;
-		stack = stack->link->link->link;
+		free(tmp);// "if" list cover
+		tmp = stack->link->link; // bool value
+		stack = stack->link->link->link; // element before bool value
 
-		// free(tmp->value);
-		// free(tmp);
-		// freeUlist(ifTrue->value);
-		// free(ifTrue);
-		// free(ifFalse);
+		free(tmp);
+		freeUlist(ifTrue->value);
+		free(ifTrue);
+		free(ifFalse);
 	}
 }
 
@@ -1149,36 +1076,20 @@ void deff(){
 	stack = stack->link->link;
 	functionName->link = NULL;
 	functionBody->link = NULL;
-	// insertFunction( insertFunctionName((char*)functionName->value), functionBody);
 	struct poolMember* ref = (struct poolMember*)functionName->value;
 
 	ref->type = func;
 	ref->value = functionBody;
-	// free(functionName);
+	free(functionName);
 	functionName = expression;
 	expression = expression->link;
-	// free(functionName->value);
-	// free(functionName);
+	free(functionName);
 
 }
 
-
-struct ulist* searchFunction(char* target){
-	int l = 0;
-	int r = flength - 1;
-	int m;
-	while(l <= r){
-		m = (r+l)/2;
-		if(equal(target, fNames[m])){
-			return functions[m];
-		}else if(strcmp(fNames[m], target) > 0){
-			r = m - 1;
-		}else if(strcmp(fNames[m], target) < 0){
-			l = m + 1;
-		}
-	}
-	return NULL;
-}
+//
+//<----------------------------Calculate functions---------------------------->
+//
 
 struct ulist* calculate(char* buffer){
 	expression = generateUlist(tokenize(buffer));
@@ -1222,7 +1133,9 @@ struct ulist* calculate(char* buffer){
 				expression = tmp;
 			}else if (ref->type == func)
 			{
+				tmp = expression;
 				expression = concatUlist(copyUlist(((struct ulist*)ref->value)->value), expression->link);
+				free(tmp);
 			}
 			
 		}
@@ -1272,7 +1185,9 @@ struct ulist* calculateNoTrace(char* buffer){
 				expression = tmp;
 			}else if (ref->type == func)
 			{
+				tmp = expression;
 				expression = concatUlist(copyUlist(((struct ulist*)ref->value)->value), expression->link);
+				free(tmp);
 			}
 			
 		}
@@ -1282,56 +1197,9 @@ struct ulist* calculateNoTrace(char* buffer){
 }
 
 
-int insertFunctionName(char* name){
-	char** newFNames = malloc(sizeof(char*) * (flength + 1));
-	int i = 0;
-	int index;
-	while(i < flength && strcmp((char*)fNames[i], (char*)name) < 0 ){
-		newFNames[i] = fNames[i];
-		i++;
-	}
-	newFNames[i] = name;
-	index = i;
-	for(i; i < flength; i++){
-		newFNames[i + 1] = fNames[i];
-	}
-	char ** tmp;
-	tmp = fNames;
-	fNames = newFNames;
-	flength+=1;
-	free(tmp);
-	return index;
-}
-
-void insertFunction(int index, struct ulist* function){
-	int i = 0;
-	struct ulist** tmp;
-	struct ulist** newFunctions = malloc(sizeof(struct ulist*) * flength);
-	while(i < index){
-		newFunctions[i] = functions[i];
-		++i;
-	}
-	newFunctions[index] = function;
-	while(i < flength-1){
-		newFunctions[i+1] = functions[i];
-		++i;
-	}
-	tmp = functions;
-	functions = newFunctions;
-	free(tmp);
-}
-
-void freeFunctions(){
-	for(int i = 0; i < flength; ++i){
-		if(functions[i]->type==1){
-			freeUlist(functions[i]);
-		}else if(functions[i]->type==-1){
-			free(functions[i]);
-		}
-	}
-	free(functions);
-}
-
+//
+//<----------------------------StringPool operations---------------------------->
+//
 
 struct poolMember* searchStringPool(char* target){
 	struct poolMember* buffer = stringPool;
@@ -1368,140 +1236,72 @@ void printUlistStringPool(struct ulist* list)
 	}
 }
 
+void freeStringPool(){
+	struct poolMember* tmp;
+	while(stringPool != NULL){
+		if(stringPool->type == str){
+			tmp = stringPool->link;
+			free(stringPool->name);
+			free(stringPool);
+			stringPool = tmp;
+		}else if(stringPool->type == func){
+			tmp = stringPool->link;
+			free(stringPool->name);
+			freeUlist(stringPool->value);
+			free(stringPool);
+			stringPool = tmp;
+		}else if(stringPool->type == cFunc){
+			tmp = stringPool->link;
+			free(stringPool->name);
+			free(stringPool);
+			stringPool = tmp;
+		}
+	}
+}
+
 
 int main(int argc, char** argv){
 
+// filling string pool with system values
 
-
-	//setting array of initial functions
-	struct ulist* addS = malloc(sizeof(struct ulist));
-	addS->type = -1;
-	addS->value = addf;
-	addS->link = NULL;
-	insertFunction( insertFunctionName(strCopy("+")), addS);
 	addToStringPool(strCopy("+"), addf, cFunc);
 
-
-	struct ulist* subS = malloc(sizeof(struct ulist));
-	subS->type = -1;
-	subS->value = substractf;
-	subS->link = NULL;
-	insertFunction( insertFunctionName(strCopy("-")), subS);
 	addToStringPool(strCopy("-"), substractf, cFunc);
 
-	struct ulist* multS = malloc(sizeof(struct ulist));
-	multS->type = -1;
-	multS->value = multiplyf;
-	multS->link = NULL;
-	insertFunction( insertFunctionName(strCopy("*")), multS);
 	addToStringPool(strCopy("*"), multiplyf, cFunc);
 
-	struct ulist* lessS = malloc(sizeof(struct ulist));
-	lessS->type = -1;
-	lessS->value = lessf;
-	lessS->link = NULL;
-	insertFunction( insertFunctionName(strCopy("<")), lessS);
 	addToStringPool(strCopy("<"), lessf, cFunc);
 
-	struct ulist* moreS = malloc(sizeof(struct ulist));
-	moreS->type = -1;
-	moreS->value = moref;
-	moreS->link = NULL;
-	insertFunction( insertFunctionName(strCopy(">")), moreS);
 	addToStringPool(strCopy(">"), moref, cFunc);
 
-	struct ulist* eqS = malloc(sizeof(struct ulist));
-	eqS->type = -1;
-	eqS->value = equalf;
-	eqS->link = NULL;
-	insertFunction( insertFunctionName(strCopy("==")), eqS);
 	addToStringPool(strCopy("=="), equalf, cFunc);
 
-	struct ulist* dupS = malloc(sizeof(struct ulist));
-	dupS->type = -1;
-	dupS->value = dupf;
-	dupS->link = NULL;
-	insertFunction( insertFunctionName(strCopy("dup")), dupS);
 	addToStringPool(strCopy("dup"), dupf, cFunc);
 
-	struct ulist* dropS = malloc(sizeof(struct ulist));
-	dropS->type = -1;
-	dropS->value = dropf;
-	dropS->link = NULL;
-	insertFunction( insertFunctionName(strCopy("drop")), dropS);
 	addToStringPool(strCopy("drop"), dropf, cFunc);
 	
-	struct ulist* swapS = malloc(sizeof(struct ulist));
-	swapS->type = -1;
-	swapS->value = swapf;
-	swapS->link = NULL;
-	insertFunction( insertFunctionName(strCopy("swap")), swapS);
 	addToStringPool(strCopy("swap"), swapf, cFunc);
 
-	struct ulist* nullS = malloc(sizeof(struct ulist));
-	nullS->type = -1;
-	nullS->value = nullf;
-	nullS->link = NULL;
-	insertFunction( insertFunctionName(strCopy("null")), nullS);
 	addToStringPool(strCopy("null"), nullf, cFunc);
 
-	struct ulist* firstS = malloc(sizeof(struct ulist));
-	firstS->type = -1;
-	firstS->value = firstf;
-	firstS->link = NULL;
-	insertFunction( insertFunctionName(strCopy("first")), firstS);
 	addToStringPool(strCopy("first"), firstf, cFunc);
 
-	struct ulist* restS = malloc(sizeof(struct ulist));
-	restS->type = -1;
-	restS->value = restf;
-	restS->link = NULL;
-	insertFunction( insertFunctionName(strCopy("rest")), restS);
 	addToStringPool(strCopy("rest"), restf, cFunc);
 
-	struct ulist* consS = malloc(sizeof(struct ulist));
-	consS->type = -1;
-	consS->value = consf;
-	consS->link = NULL;
-	insertFunction( insertFunctionName(strCopy("cons")), consS);
 	addToStringPool(strCopy("cons"), consf, cFunc);
 
-	struct ulist* unconsS = malloc(sizeof(struct ulist));
-	unconsS->type = -1;
-	unconsS->value = unconsf;
-	unconsS->link = NULL;
-	insertFunction( insertFunctionName(strCopy("uncons")), unconsS);
 	addToStringPool(strCopy("uncons"), unconsf, cFunc);
 
-	struct ulist* iStruct = malloc(sizeof(struct ulist));
-	iStruct->type = -1;
-	iStruct->value = If;
-	iStruct->link = NULL;
-	insertFunction( insertFunctionName(strCopy("i")), iStruct);
 	addToStringPool(strCopy("i"), If, cFunc);
 
-	struct ulist* ifStruct = malloc(sizeof(struct ulist));
-	ifStruct->type = -1;
-	ifStruct->value = iff;
-	ifStruct->link = NULL;
-	insertFunction( insertFunctionName(strCopy("if")), ifStruct);
 	addToStringPool(strCopy("if"), iff, cFunc);
 
-	struct ulist* dipS = malloc(sizeof(struct ulist));
-	dipS->type = -1;
-	dipS->value = dipf;
-	dipS->link = NULL;
-	insertFunction( insertFunctionName(strCopy("dip")), dipS);
 	addToStringPool(strCopy("dip"), dipf, cFunc);
 
-	struct ulist* defS = malloc(sizeof(struct ulist));
-	defS->type = -1;
-	defS->value = deff;
-	defS->link = NULL;
-	insertFunction( insertFunctionName(strCopy("def")), defS);
 	addToStringPool(strCopy("def"), deff, cFunc);
 
 	addToStringPool(strCopy("true"), NULL, str);
+
 	addToStringPool(strCopy("false"), NULL, str);
 
 
@@ -1544,19 +1344,16 @@ int main(int argc, char** argv){
 			}			
 			i++;
 		}
-		// printUlistStringPool(calculate(buffer));
-		// printUlist(calculate(buffer));
-		if(trace)printUlist(calculate(buffer));
-		else printUlist(calculateNoTrace(buffer));
+		
+		if(trace)printUlistStringPool(calculate(buffer));
+		else printUlistStringPool(calculateNoTrace(buffer));
 	}
 	
 
-	// free(buffer);
-	for(int i = 0; i < flength; ++i)free(fNames[i]);
-	free(fNames);
-	freeFunctions();
-	// freeUlist(stack);
-    printf("\nMalloc calls:%d Free calls:%d\n",malloccounter,freecounter-2);
+	free(buffer);
+	freeUlist(stack);
+	freeStringPool();
+    printf("\nMalloc calls:%d Free calls:%d\n",malloccounter,freecounter);
 
     return 0;
 }
