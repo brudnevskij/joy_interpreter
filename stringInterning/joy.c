@@ -403,11 +403,16 @@ char* dispatchSub(char* s1, char* s2){
 		absoluteValue2 = moveLeftNoFree(s2);
 	}else absoluteValue2 = strCopy(s2);
 	
-	if(sign1&&!sign2){
+	if(sign1&&!sign2)
+	{
 		return addMinus(addStrings(absoluteValue1, absoluteValue2));
-	}else if(!sign1&&sign2){
+	}
+	else if(!sign1&&sign2)
+	{
 		return addStrings(absoluteValue1, absoluteValue2);
-	}else if(sign1&&sign2){
+	}
+	else if(sign1&&sign2)
+	{
 		if(compare(absoluteValue1, absoluteValue2) == absoluteValue1){
 			return addMinus(subtract(absoluteValue1, absoluteValue2));
 		}else if(compare(absoluteValue1, absoluteValue2) == absoluteValue2){
@@ -415,7 +420,9 @@ char* dispatchSub(char* s1, char* s2){
 		}else{
 			return subtract(absoluteValue1, absoluteValue2);
 		}
-	}else{
+	}
+	else
+	{
 		if(compare(absoluteValue1, absoluteValue2) == absoluteValue1){
 			return subtract(absoluteValue1, absoluteValue2);
 		}else if(compare(absoluteValue1, absoluteValue2) == absoluteValue2){
@@ -511,35 +518,35 @@ char* subtract(char* s1, char* s2){
     int i;
     char* result;
     if(bigger == NULL){
-	result =(char*)malloc(len1+1);
-	result[len1]='\0';
-	i = len1-1;
-	sent1 = len1-1;
-	bigger= s1;
-	smaller = s2;
-	sent2 = len2-1;
+		result =(char*)malloc(len1+1);
+		result[len1]='\0';
+		i = len1-1;
+		sent1 = len1-1;
+		bigger= s1;
+		smaller = s2;
+		sent2 = len2-1;
     }else{
-	result= (char*)malloc(stringLen(bigger)+1);
-	i = stringLen(bigger)-1;
-	result[i+1]='\0';
-	sent1= stringLen(bigger)-1;
-	sent2 = stringLen(smaller)-1;
+		result= (char*)malloc(stringLen(bigger)+1);
+		i = stringLen(bigger)-1;
+		result[i+1]='\0';
+		sent1= stringLen(bigger)-1;
+		sent2 = stringLen(smaller)-1;
     }
     while( i >=0){
-	if(sent1>=0)sub1 = bigger[sent1]-48;
-	if(sent2>=0)sub2= smaller[sent2]-48;
-	result[i] = sub1 - sub2 +carry+48;
-	sub1 = 0;
-	sub2 = 0;
-	if(result[i]<48){
-	     result[i] = result[i]+10;
-	    carry =-1;
-	}else{
-	    carry =0;
-	}
-	sent1--;
-	sent2--;
-	i--;
+		if(sent1>=0)sub1 = bigger[sent1]-48;
+		if(sent2>=0)sub2= smaller[sent2]-48;
+		result[i] = sub1 - sub2 +carry+48;
+		sub1 = 0;
+		sub2 = 0;
+		if(result[i]<48){
+			result[i] = result[i]+10;
+			carry =-1;
+		}else{
+			carry =0;
+		}
+		sent1--;
+		sent2--;
+		i--;
     }
     while(result[0] =='0'&&stringLen(result)>1){
 	result = moveLeft(result);
@@ -549,7 +556,9 @@ char* subtract(char* s1, char* s2){
     return result;
 }
 
-
+//
+//<----------------------------List operations---------------------------->
+//
 
 char* copyUntilEnd(char* s, int start, int end){
     char* ns;
@@ -560,19 +569,12 @@ char* copyUntilEnd(char* s, int start, int end){
     ns = (char*)malloc(counter*sizeof(char)+1);
     ns[counter]='\0';
     for(int j = 0; j < counter; j++){
-	ns[j] = s[start+j];
+		ns[j] = s[start+j];
     }
     return ns;
 }
 
 
-
-
-
-
-//
-//<----------------------------List operations---------------------------->
-//
 
 struct list* addToList(struct list* start, char* value){
     struct list* newmember;
@@ -584,11 +586,14 @@ struct list* addToList(struct list* start, char* value){
 
 //inverts list
 struct list* swapList(struct list* list){
-    struct list* nl =NULL;
-    while(list!=NULL){
-	nl = addToList(nl, list->word);
-	list = list->link;
-    }
+    struct list* nl = NULL;
+	struct list* buffer;
+	while(list!=NULL){
+		buffer = list->link;
+		list->link = nl;
+		nl = list;
+		list = buffer;
+	}
     return nl;
 }
 
@@ -639,7 +644,7 @@ struct list* tokenize(char* s){
 	}
     }while(s[i]!='\0');
     struct list* temp = swapList(nl);
-    freeList(nl);
+    // freeList(nl);
     return temp;
 }
 
@@ -688,7 +693,7 @@ void freeUlist(struct ulist* ulist){
 }
 
 //functions skipInside() and copyInside() help to to tokenize raw text
-//by navigating over several levels paranteses
+//by navigating over several levels of parantheses
 struct list* copyInside(struct list* list){
 	int n = 1;
 	struct list* newList = NULL;
@@ -722,7 +727,7 @@ struct list* copyInside(struct list* list){
 
 	}
 	struct list* tmp = swapList(newList);
-	freeList(newList);
+	// freeList(newList);
 	return tmp;
 }
 

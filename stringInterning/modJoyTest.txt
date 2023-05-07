@@ -23,4 +23,4 @@ dup (swap 1 - drop2 drop2 dup(
 genPerms (count swap permut) def
 
 
-(1 2 3) genPerms count drop2
+(1 2 3 4 5 6 7 ) genPerms count drop2

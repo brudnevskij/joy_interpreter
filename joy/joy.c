@@ -193,11 +193,14 @@ struct list* addToList(struct list* start, char* value){
 
 //inverts list
 struct list* swapList(struct list* list){
-    struct list* nl =NULL;
-    while(list!=NULL){
-	nl = addToList(nl, list->word);
-	list = list->link;
-    }
+    struct list* nl = NULL;
+	struct list* buffer;
+	while(list!=NULL){
+		buffer = list->link;
+		list->link = nl;
+		nl = list;
+		list = buffer;
+	}
     return nl;
 }
 
@@ -605,7 +608,7 @@ struct list* tokenize(char* s){
 	}
     }while(s[i]!='\0');
     struct list* temp = swapList(nl);
-    freeList(nl);
+    // freeList(nl);
     return temp;
 }
 
@@ -688,7 +691,7 @@ struct list* copyInside(struct list* list){
 
 	}
 	struct list* tmp = swapList(newList);
-	freeList(newList);
+	// freeList(newList);
 	return tmp;
 }
 
