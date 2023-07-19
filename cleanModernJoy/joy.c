@@ -56,6 +56,8 @@ List* stack;
 List* expression;
 // String pool of interpreter, keeps strings, interpreter functions and user defined functions
 Pool_member* string_pool = NULL;
+// stack_depth, max depth level of sub-lists in a sourcecode
+int stack_depth = 0;
 // flag for std output
 char trace = 0;
 // counter of free() calls
@@ -294,11 +296,7 @@ void print_list(List* l)
                 print_list((List*)l->value);
                 printf(")");
                 break;
-            case open_parenthesis:
-                printf(" ( ");
-                break;
-            case closed_parenthesis:
-                printf(" ) ");
+            default:
                 break;
         }
         l = l->link;
@@ -313,30 +311,25 @@ void print_list_debug(List* l)
     {
         switch (l->type) {
             case stringpool_member:
-                printf("\nmember %d\n", i);
+                printf("member %d\n", i);
                 printf("type sp_member\n");
-                print_string(
+                print_stringnl(
                         ((Pool_member*)l->value)->name
                         );
                 break;
             case number:
-                printf("\nmember %d\n", i);
+                printf("member %d\n", i);
                 printf("type number\n", i);
-                print_number((Number*)l->value);
+                print_numbernl((Number*)l->value);
                 break;
             case list:
-                printf("\nmember %d\n", i);
+                printf("member %d\n", i);
                 printf("type list\n", i);
-                printf("(");
-                print_list((List*)l->value);
-                printf(")");
+                printf("(\n");
+                print_list_debug((List*)l->value);
+                printf(")\n");
                 break;
-            case open_parenthesis:
-
-                printf("\n ( ");
-                break;
-            case closed_parenthesis:
-                printf("\n ) ");
+            default:
                 break;
         }
         ++i;
@@ -407,7 +400,7 @@ String* read_token( const char* buffer, int start)
     int end = start;
     String * result;
     // Seeking end of token
-    while(!is_separator(buffer[end]))++end;
+    while(!is_separator(buffer[++end]));
 
     int len = end - start + 1;
     int i = 0;
@@ -448,11 +441,12 @@ List* tokenize( char* source)
     {
         if(source[i] == '(')
         {
-            result = add_to_list(service_pool[0], open_parenthesis, result);
+            result = add_to_list(NULL, open_parenthesis, result);
+            ++stack_depth;
         }
         else if (source[i] == ')')
         {
-            result = add_to_list(service_pool[1], closed_parenthesis, result);
+            result = add_to_list(NULL, closed_parenthesis, result);
         }
         else if (source[i] <= ' ')
         {
@@ -460,7 +454,7 @@ List* tokenize( char* source)
         }
         else if(source[i] == '/' && source[i+1] == '/')
         {
-            while (source[i++] != '\n' && source[i++] != '\0');
+            while (source[i] != '\n' && source[i] != '\0')++i;
         }
         else
         {
@@ -494,11 +488,50 @@ List* tokenize( char* source)
 
             // setting i to the end position of token
             while (!is_separator(source[++i]));
+            --i;
         }
 
         ++i;
     }
     return reverse_list(result);
+}
+
+// parses token_list to AST
+// leaves type closed_parenthesis as sublist terminator
+List* parse(List* token_list)
+{
+    List* result = token_list;
+    List** sub_list_stack = NULL;
+    int stack_ptr = 0;
+    if (stack_depth)
+    {
+        sub_list_stack = (List**)malloc(sizeof(List) * stack_depth);
+    }
+    while (token_list != NULL)
+    {
+
+        if (token_list->type == open_parenthesis)
+        {
+            // check point
+            sub_list_stack[stack_ptr++] = token_list;
+            // reassigning parenthesis struct to be a list struct now
+            token_list->type = list;
+            // concatenating token_list to a list value
+            token_list->value = token_list->link;
+            token_list = token_list->value;
+        }
+        else if(token_list->type == closed_parenthesis)
+        {
+            sub_list_stack[--stack_ptr]->link = token_list->link;
+            token_list->link = NULL;
+            token_list = sub_list_stack[stack_ptr];
+        }
+        else{
+            token_list = token_list->link;
+        }
+    }
+    free(sub_list_stack);
+    return result;
 }
 
 int main(int argc, char *argv[]){
@@ -571,23 +604,17 @@ int main(int argc, char *argv[]){
     string_pool = add_to_stringpool(string_from_str(str_copy("true", 5), 5), NULL, sp_string);
     string_pool = add_to_stringpool(string_from_str(str_copy("false", 5), 5), NULL, sp_string);
 
-    // adding parentheses to service_pool
-    service_pool[0] = string_from_str(str_copy("(", 2), 2);
-    service_pool[1] = string_from_str(str_copy(")", 2), 2);
-
-
-    char exp[] = "1 2 -3 + - + hi dudya  ";
-
     List* l = tokenize(source_code);
+    List* ast = parse(l);
     free(source_code);
-//    print_list_debug(l);
+    printf("\ntoken_list\n");
+    print_list_debug(l);
     print_list(l);
+    printf("\nAST\n");
+    print_list_debug(ast);
+    print_list(ast);
 
     // freeing elements
-    // free "(", ")"
-    free_string(service_pool[0]);
-    free_string(service_pool[1]);
-    
     free_list(l);
     free_string_pool();
     printf("\nmallocs: %d\n", malloccounter);
