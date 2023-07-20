@@ -132,6 +132,21 @@ char* move_str_left(char* s, int len)
     s = realloc(s, sizeof(char) * (len - 1));
     return s;
 }
+// compare_str compares 2 equal len char* values
+// n1 > n2, returns n1
+// n2 > n1, returns n2
+// n1 == n2, returns NULL
+char* compare_str(char* n1, char* n2, int len)
+{
+    int i = 0;
+    while (i < len - 1)
+    {
+        if(n1[i] > n2[i]) return n1;
+        else if(n2[i] > n1[i]) return n2;
+        ++i;
+    }
+    return NULL;
+}
 
 // add_str add two absolute char* numbers
 // n1_len & n2_len representing char*'s len + \0
@@ -288,6 +303,15 @@ uint8_t is_number(char* s)
     return 1;
 }
 
+Number* number_from_str(char* n, int len, char sign)
+{
+    Number* result = (Number*) malloc(sizeof(Number));
+    result->value = n;
+    result->length = len;
+    result->sign = sign;
+    return result;
+}
+
 // number_from_string converts String* to number
 // if String->value has negative sign
 Number* number_from_string(String* s)
@@ -333,16 +357,24 @@ Number* add_numbers(Number* n1, Number* n2)
         }
         else
         {
-            // When length are equal, we have to check highest order number
-            if (n1->value[0] > n2->value[0])
+            // When length are equal, we have to find actual highest number
+            char* biggest_value = compare_str(n1->value, n2->value, n1->length);
+            // Comparing addresses
+            if (biggest_value == n1->value)
             {
                 result->value = subtract_str(n1->value, n1->length, n2->value, n2->length);
                 result->sign = n1->sign;
             }
-            else
+            else if(biggest_value == n2->value)
             {
                 result->value = subtract_str(n2->value, n2->length, n1->value, n1->length);
                 result->sign = n2->sign;
+            }
+            else
+            {
+                // values are equal => sum will always be 0
+                result->value =str_copy("0",2);
+                result->sign = plus;
             }
         }
     }
@@ -581,7 +613,7 @@ void print_token(String* token){
 //<----------------------------Interpreter functions---------------------------->
 //
 
-void addf()
+void add_f()
 {
     // Reusing operation's List* struct as result's place-holder
     List* buffer = expression;
@@ -589,6 +621,30 @@ void addf()
     buffer->link = stack;
     buffer->type = number;
     buffer->value = add_numbers(stack->value, stack->link->value);
+    stack = buffer;
+}
+
+void subtract_f()
+{
+    // Reusing operation's List* struct as result's place-holder
+    List* buffer = expression;
+    expression = expression->link;
+    buffer->link = stack;
+    buffer->type = number;
+
+    Number * n1 = stack->link->value;
+    Number * n2 = stack->value;
+    // n1 - n2, minus operator just reverses sign of subtrahend
+    char sign = n2->sign;
+    if(sign == plus)n2->sign = minus;
+    else n2->sign = plus;
+
+    buffer->value = add_numbers(n1, n2);
+
+    // returning sign to previous state
+    sign = n2->sign;
+    if(sign == plus)n2->sign = minus;
+    else n2->sign = plus;
     stack = buffer;
 }
 
@@ -792,8 +848,8 @@ int main(int argc, char *argv[]){
     }
 
     // Setting string pool with language base function
-    string_pool = add_to_stringpool(string_from_str(str_copy("+", 2), 2), addf, sp_function);
-    string_pool = add_to_stringpool(string_from_str(str_copy("-", 2), 2), NULL, sp_function);
+    string_pool = add_to_stringpool(string_from_str(str_copy("+", 2), 2), add_f, sp_function);
+    string_pool = add_to_stringpool(string_from_str(str_copy("-", 2), 2), subtract_f, sp_function);
     string_pool = add_to_stringpool(string_from_str(str_copy("*", 2), 2), NULL, sp_function);
     string_pool = add_to_stringpool(string_from_str(str_copy("<", 2), 2), NULL, sp_function);
     string_pool = add_to_stringpool(string_from_str(str_copy(">", 2), 2), NULL, sp_function);
