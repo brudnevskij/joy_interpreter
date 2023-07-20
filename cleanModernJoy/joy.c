@@ -133,7 +133,7 @@ char* move_str_left(char* s, int len)
     return s;
 }
 
-// add_str add two absolute str numbers
+// add_str add two absolute char* numbers
 // n1_len & n2_len representing char*'s len + \0
 char* add_str(char* n1,int n1_len, char* n2, int n2_len)
 {
@@ -182,11 +182,56 @@ char* add_str(char* n1,int n1_len, char* n2, int n2_len)
     {
         result[0] = result[0] + 1;
     }
-    if (result[0] == '0')
-    {
-        for (int j = 0; j < result_len - 1; ++j)result[j] = result[j+1];
-        result = realloc(result, sizeof(char) * (result_len - 1));
+    while(result[0] == '0' && result_len > 2){
+        result = move_str_left(result, result_len);
+        --result_len;
     }
+    return result;
+}
+
+// subtract_str add two absolute char* numbers
+// n1 - minuend
+// n2 - subtrahend
+// result = n1 - n2
+// minuend must always be longer than subtrahend, otherwise returns NULL
+// if operands have same len, minuend must be bigger in value than subtrahend
+// n1_len & n2_len representing char*'s len + \0
+char* subtract_str(char* n1, int n1_len, char* n2, int n2_len)
+{
+    if(n2_len > n1_len) return NULL;
+
+    int result_len = n1_len + 1;
+    char* result = (char*) malloc(sizeof(char) * result_len);
+    result[result_len-1] = '\0';
+    result[0] = '0';
+
+    // -2 because n1[n1_len-1] = \0
+    int n1_ptr = n1_len - 2;
+    int n2_ptr = n2_len - 2;
+    int result_ptr = result_len - 2;
+    int diff = 0;
+    int carry = 0;
+    while(result_ptr >= 0)
+    {
+        diff = 0;
+        if(n1_ptr >= 0) diff += n1[n1_ptr--] - 48;
+        if(n2_ptr >= 0) diff -= n2[n2_ptr--] - 48;
+        diff += carry;
+        if (diff < 0)
+        {
+            diff += 10;
+            carry = -1;
+        }
+        else carry = 0;
+
+        result[result_ptr] = diff + 48;
+        --result_ptr;
+    }
+    while(result[0] == '0' && result_len > 2){
+        result = move_str_left(result, result_len);
+        --result_len;
+    }
+
     return result;
 }
 
@@ -250,13 +295,9 @@ Number* number_from_string(String* s)
     Number* result = (Number*) malloc(sizeof(Number));
     if(s->value[0] == '-')
     {
-        char* val = s->value;
-
         result->value = move_str_left(s->value, s->length);
         result->sign = minus;
         result->length = s->length - 1;
-
-        //free(val);
     } else{
         result->value = s->value;
         result->sign = plus;
@@ -275,11 +316,39 @@ Number* add_numbers(Number* n1, Number* n2)
         result->sign = n1->sign;
         result->value = add_str(n1->value, n1->length, n2->value, n2->length);
                 result->length = len(result->value);
-    }else
-    {
-        return NULL;
     }
-
+    else
+    {
+        // In this case, sign of the biggest number
+        // will define sign of the result
+        if(n1->length > n2->length)
+        {
+            result->value = subtract_str(n1->value, n1->length, n2->value, n2->length);
+            result->sign = n1->sign;
+        }
+        else if(n2->length > n1->length)
+        {
+            result->value = subtract_str(n2->value, n2->length, n1->value, n1->length);
+            result->sign = n2->sign;
+        }
+        else
+        {
+            // When length are equal, we have to check highest order number
+            if (n1->value[0] > n2->value[0])
+            {
+                result->value = subtract_str(n1->value, n1->length, n2->value, n2->length);
+                result->sign = n1->sign;
+            }
+            else
+            {
+                result->value = subtract_str(n2->value, n2->length, n1->value, n1->length);
+                result->sign = n2->sign;
+            }
+        }
+    }
+    result->length = len(result->value);
+    // Edge case
+    if (result->length == 2 && result->value[0] == '0') result->sign = plus;
     return result;
 }
 
