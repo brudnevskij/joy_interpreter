@@ -123,12 +123,69 @@ int8_t str_equal(const char* s1, const char* s2)
 // used on tokenization step to work with negative numbers
 char* move_str_left(char* s, int len)
 {
-    char* result = (char*) malloc(sizeof(char) * (len - 1));
     int i = 1;
     while (i < len )
     {
-        result[i - 1] = s[i];
+        s[i - 1] = s[i];
         ++i;
+    }
+    s = realloc(s, sizeof(char) * (len - 1));
+    return s;
+}
+
+// add_str add two absolute str numbers
+// n1_len & n2_len representing char*'s len + \0
+char* add_str(char* n1,int n1_len, char* n2, int n2_len)
+{
+    char* result;
+    int result_len;
+    // maximum symbols of addition is the biggest length+1
+    if(n1_len > n2_len)
+    {
+        result_len = n1_len + 1;
+    }
+    else
+    {
+        result_len = n2_len + 1;
+    }
+    result = (char*) malloc(sizeof(char) * result_len);
+    result[result_len-1] = '\0';
+    // flag to check for future allocation
+    // if no carry on highest positions
+    result[0] = '0';
+
+    // n1_len-2 because, n1_ptr[n1_len-1] == '\0'
+    int n1_ptr = n1_len - 2;
+    int n2_ptr = n2_len - 2;
+    int result_ptr = result_len -2;
+    int8_t carry = 0;
+    char sum = 0;
+    while( n1_ptr >= 0 || n2_ptr >= 0){
+        sum = 0;
+        if(n1_ptr >= 0)sum += n1[n1_ptr--] - 48;
+        if(n2_ptr >= 0)sum += n2[n2_ptr--] - 48;
+        if(carry)
+        {
+            ++sum;
+            carry = 0;
+        }
+        if(sum >9)
+        {
+            carry = 1;
+            sum -= 10;
+        }
+        result[result_ptr--] = sum + 48;
+    }
+
+    // check if highest order sum had carry
+    if(carry)
+    {
+        result[0] = result[0] + 1;
+    }
+    if (result[0] == '0')
+    {
+        for (int j = 0; j < result_len - 1; ++j)result[j] = result[j+1];
+        result = realloc(result, sizeof(char) * (result_len - 1));
     }
     return result;
 }
@@ -186,6 +243,8 @@ uint8_t is_number(char* s)
     return 1;
 }
 
+// number_from_string converts String* to number
+// if String->value has negative sign
 Number* number_from_string(String* s)
 {
     Number* result = (Number*) malloc(sizeof(Number));
@@ -197,12 +256,30 @@ Number* number_from_string(String* s)
         result->sign = minus;
         result->length = s->length - 1;
 
-        free(val);
+        //free(val);
     } else{
         result->value = s->value;
         result->sign = plus;
         result->length = s->length;
     }
+    return result;
+}
+
+Number* add_numbers(Number* n1, Number* n2)
+{
+    Number* result = (Number*)malloc(sizeof(Number));
+    // if signs are identical we perform addition of absolute values
+    // and assigning number's sign
+    if (n1->sign == n2->sign)
+    {
+        result->sign = n1->sign;
+        result->value = add_str(n1->value, n1->length, n2->value, n2->length);
+                result->length = len(result->value);
+    }else
+    {
+        return NULL;
+    }
+
     return result;
 }
 
@@ -431,6 +508,21 @@ void print_token(String* token){
 
 }
 
+//
+//<----------------------------Interpreter functions---------------------------->
+//
+
+void addf()
+{
+    // Reusing operation's List* struct as result's place-holder
+    List* buffer = expression;
+    expression = expression->link;
+    buffer->link = stack;
+    buffer->type = number;
+    buffer->value = add_numbers(stack->value, stack->link->value);
+    stack = buffer;
+}
+
 // Tokenizes source based on ), (, \s symbols
 List* tokenize( char* source)
 {
@@ -503,10 +595,9 @@ List* parse(List* token_list)
     List* result = token_list;
     List** sub_list_stack = NULL;
     int stack_ptr = 0;
-    if (stack_depth)
-    {
-        sub_list_stack = (List**)malloc(sizeof(List) * stack_depth);
-    }
+
+    if (stack_depth)sub_list_stack = (List**)malloc(sizeof(List) * stack_depth);
+
     while (token_list != NULL)
     {
 
@@ -530,8 +621,59 @@ List* parse(List* token_list)
             token_list = token_list->link;
         }
     }
-    free(sub_list_stack);
+
+    if(stack_depth)free(sub_list_stack);
+
     return result;
+}
+
+List* calculate_with_trace(List* ast)
+{
+    List* buffer = NULL;
+    expression = ast;
+    stack = NULL;
+    int operation = 0;
+
+    printf("\nExpression to calculate:\n");
+    print_list(expression);
+    printf("\n");
+
+    while (expression != NULL && expression->type != closed_parenthesis)
+    {
+        ++operation;
+        if(expression->type == stringpool_member)
+        {
+            Pool_member* member = expression->value;
+            if (member->type == sp_function)
+            {
+                void (*fptr)() = member->value;
+                (*fptr)();
+            }
+            else if(member->type == sp_string)
+            {
+
+            }
+            else if (member->type == sp_subexpression)
+            {
+
+            }
+        }
+        else
+        {
+            // Putting List member on stack
+            buffer = expression;
+            expression = expression->link;
+            buffer->link = stack;
+            stack = buffer;
+        }
+        printf("\nOperation %d", operation);
+        printf("\nExp:");
+        print_list(expression);
+        printf("\nStack:");
+        print_list(stack);
+        printf("\n");
+    }
+    return stack;
 }
 
 int main(int argc, char *argv[]){
@@ -548,10 +690,8 @@ int main(int argc, char *argv[]){
     {
         for(int i = 2; i < argc; ++i)
         {
-            if (str_equal(argv[i], "-t"))
-            {
-                printf("TRACE MODE");
-            }
+            if (str_equal(argv[i], "-t"))trace = 1;
+
         }
     }
 
@@ -583,7 +723,7 @@ int main(int argc, char *argv[]){
     }
 
     // Setting string pool with language base function
-    string_pool = add_to_stringpool(string_from_str(str_copy("+", 2), 2), NULL, sp_function);
+    string_pool = add_to_stringpool(string_from_str(str_copy("+", 2), 2), addf, sp_function);
     string_pool = add_to_stringpool(string_from_str(str_copy("-", 2), 2), NULL, sp_function);
     string_pool = add_to_stringpool(string_from_str(str_copy("*", 2), 2), NULL, sp_function);
     string_pool = add_to_stringpool(string_from_str(str_copy("<", 2), 2), NULL, sp_function);
@@ -614,8 +754,14 @@ int main(int argc, char *argv[]){
     print_list_debug(ast);
     print_list(ast);
 
+    if (trace)
+    {
+        calculate_with_trace(ast);
+    }
+
     // freeing elements
-    free_list(l);
+    free_list(stack);
+    //free_list(expression);
     free_string_pool();
     printf("\nmallocs: %d\n", malloccounter);
     printf("free: %d\n", freecounter);
