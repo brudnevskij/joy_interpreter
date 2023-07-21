@@ -1032,6 +1032,32 @@ void i_f()
     free(buffer);
 }
 
+void if_f()
+{
+    // freeing operator
+    List* buffer = expression;
+    expression = expression->link;
+    free(buffer);
+
+    List* true_condition = stack->link;
+    List*  false_condition = stack;
+    List* bool = stack->link->link;
+    if(bool->value == true_link)
+    {
+        expression = concat_list(true_condition->value, expression);
+        free_list(false_condition->value);
+    }
+    else if(bool->value == false_link)
+    {
+        expression = concat_list(false_condition->value, expression);
+        free_list(true_condition->value);
+    }
+
+    free(bool);
+    free(true_condition);
+    free(false_condition);
+}
+
 // Tokenizes source based on ), (, \s symbols
 List* tokenize( char* source)
 {
@@ -1252,7 +1278,7 @@ int main(int argc, char *argv[]){
     add_to_stringpool(string_from_str(str_copy("cons", 5), 5), cons_f, sp_function);
     add_to_stringpool(string_from_str(str_copy("uncons", 7), 7), uncons_f, sp_function);
     add_to_stringpool(string_from_str(str_copy("i", 2), 2), i_f, sp_function);
-    add_to_stringpool(string_from_str(str_copy("if", 3), 3), NULL, sp_function);
+    add_to_stringpool(string_from_str(str_copy("if", 3), 3), if_f, sp_function);
     add_to_stringpool(string_from_str(str_copy("dip", 4), 4), NULL, sp_function);
     add_to_stringpool(string_from_str(str_copy("def",4), 4), NULL, sp_function);
     true_link = add_to_stringpool(string_from_str(str_copy("true", 5), 5), NULL, sp_string);
