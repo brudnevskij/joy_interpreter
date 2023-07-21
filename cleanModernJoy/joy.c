@@ -903,6 +903,30 @@ void drop_f()
     }
 }
 
+void swap_f()
+{
+    // freeing operator
+    List* buffer = expression;
+    expression = expression->link;
+    free(buffer);
+
+    buffer = stack;
+    stack = stack->link;
+    buffer->link = stack->link;
+    stack->link = buffer;
+}
+
+void null_f()
+{
+    List* buffer = expression;
+    expression = expression->link;
+    buffer->link = stack;
+    buffer->type = stringpool_member;
+    if(stack->value == NULL || ((List*)stack->value)->type == closed_parenthesis) buffer->value = true_link;
+    else buffer->value = false_link;
+    stack=buffer;
+}
+
 // Tokenizes source based on ), (, \s symbols
 List* tokenize( char* source)
 {
@@ -1116,8 +1140,8 @@ int main(int argc, char *argv[]){
     add_to_stringpool(string_from_str(str_copy("==", 3), 3), eq_f, sp_function);
     add_to_stringpool(string_from_str(str_copy("dup", 4), 4), dup_f, sp_function);
     add_to_stringpool(string_from_str(str_copy("drop", 5), 5), drop_f, sp_function);
-    add_to_stringpool(string_from_str(str_copy("swap", 5), 5), NULL, sp_function);
-    add_to_stringpool(string_from_str(str_copy("null", 5), 5), NULL, sp_function);
+    add_to_stringpool(string_from_str(str_copy("swap", 5), 5), swap_f, sp_function);
+    add_to_stringpool(string_from_str(str_copy("null", 5), 5), null_f, sp_function);
     add_to_stringpool(string_from_str(str_copy("first", 6), 6), NULL, sp_function);
     add_to_stringpool(string_from_str(str_copy("rest", 5), 5), NULL, sp_function);
     add_to_stringpool(string_from_str(str_copy("cons", 5), 5), NULL, sp_function);
