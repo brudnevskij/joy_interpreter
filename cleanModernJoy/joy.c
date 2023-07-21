@@ -969,6 +969,34 @@ void rest_f()
     }
 }
 
+void cons_f()
+{
+    // freeing operator
+    List* buffer = expression;
+    expression = expression->link;
+    free(buffer);
+
+    buffer = stack->link;
+    stack->link = buffer->link;
+
+    buffer->link = stack->value;
+    stack->value = buffer;
+}
+
+void uncons_f()
+{
+    // freeing operator
+    List* buffer = expression;
+    expression = expression->link;
+    free(buffer);
+
+    buffer = stack->value;
+    stack->value = buffer->link;
+
+    buffer->link = stack->link;
+    stack->link = buffer;
+}
+
 // Tokenizes source based on ), (, \s symbols
 List* tokenize( char* source)
 {
@@ -1186,8 +1214,8 @@ int main(int argc, char *argv[]){
     add_to_stringpool(string_from_str(str_copy("null", 5), 5), null_f, sp_function);
     add_to_stringpool(string_from_str(str_copy("first", 6), 6), first_f, sp_function);
     add_to_stringpool(string_from_str(str_copy("rest", 5), 5), rest_f, sp_function);
-    add_to_stringpool(string_from_str(str_copy("cons", 5), 5), NULL, sp_function);
-    add_to_stringpool(string_from_str(str_copy("uncons", 7), 7), NULL, sp_function);
+    add_to_stringpool(string_from_str(str_copy("cons", 5), 5), cons_f, sp_function);
+    add_to_stringpool(string_from_str(str_copy("uncons", 7), 7), uncons_f, sp_function);
     add_to_stringpool(string_from_str(str_copy("i", 2), 2), NULL, sp_function);
     add_to_stringpool(string_from_str(str_copy("if", 3), 3), NULL, sp_function);
     add_to_stringpool(string_from_str(str_copy("dip", 4), 4), NULL, sp_function);
