@@ -1058,6 +1058,23 @@ void if_f()
     free(false_condition);
 }
 
+void dip_f()
+{
+    // freeing operator
+    List* buffer = expression;
+    expression = expression->link;
+    free(buffer);
+
+    List* first_stack_buffer = stack;
+    List* second_stack_buffer = stack->link;
+    stack = stack->link->link;
+
+    second_stack_buffer->link = NULL;
+    buffer = concat_list(first_stack_buffer->value, second_stack_buffer);
+    expression = concat_list(buffer, expression);
+    free(first_stack_buffer);
+}
+
 // Tokenizes source based on ), (, \s symbols
 List* tokenize( char* source)
 {
@@ -1279,7 +1296,7 @@ int main(int argc, char *argv[]){
     add_to_stringpool(string_from_str(str_copy("uncons", 7), 7), uncons_f, sp_function);
     add_to_stringpool(string_from_str(str_copy("i", 2), 2), i_f, sp_function);
     add_to_stringpool(string_from_str(str_copy("if", 3), 3), if_f, sp_function);
-    add_to_stringpool(string_from_str(str_copy("dip", 4), 4), NULL, sp_function);
+    add_to_stringpool(string_from_str(str_copy("dip", 4), 4), dip_f, sp_function);
     add_to_stringpool(string_from_str(str_copy("def",4), 4), NULL, sp_function);
     true_link = add_to_stringpool(string_from_str(str_copy("true", 5), 5), NULL, sp_string);
     false_link = add_to_stringpool(string_from_str(str_copy("false", 6), 6), NULL, sp_string);
