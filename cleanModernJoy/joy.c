@@ -250,6 +250,50 @@ char* subtract_str(char* n1, int n1_len, char* n2, int n2_len)
     return result;
 }
 
+char* multiply_str_by_char(char* n, int len, char m, int ten){
+    int result_len = len + 1 + ten;
+    char* result = (char*)malloc(sizeof(char));
+    result[result_len - 1] = '\0';
+    result[0] = '0';
+
+    int n_ptr = len - 2;
+    int result_ptr = result_len - 2;
+    int carry = 0;
+    int product = 1;
+    while(ten)
+    {
+        result[result_ptr--] = '0';
+        --ten;
+    }
+    while(result_ptr >= 0)
+    {
+        if(n_ptr >= 0)product *= n[n_ptr--] - 48;
+        else product *= 0;
+
+        product *= m - 48;
+        product += carry;
+        if(product > 10)
+        {
+            carry = product / 10;
+            product %= 10;
+        }
+        else
+        {
+            carry = 0;
+        }
+        result[result_ptr--] = product + 48;
+        product = 1;
+    }
+    if (carry){
+        result[0] +=1;
+    }
+    while(result[0] == '0' && result_len > 2){
+        result = move_str_left(result, result_len);
+        --result_len;
+    }
+    return  result;
+}
+
 // string_from_str allocates memory for new string pool member
 // len should be provided with consideration of \0
 String* string_from_str(char* s, int len)
@@ -381,6 +425,45 @@ Number* add_numbers(Number* n1, Number* n2)
     result->length = len(result->value);
     // Edge case
     if (result->length == 2 && result->value[0] == '0') result->sign = plus;
+    return result;
+}
+
+// TODO: consider optimisation
+char* multiply_str(char* n1, int n1_len, char* n2, int n2_len){
+    char* ns = str_copy("0", 2);
+    char* product_buffer;
+    char* sum_buffer;
+    for(int i = 0; i < n1_len-1; i++){
+        product_buffer = multiply_str_by_char(n2, n2_len, n1[n1_len-2-i], i);
+        sum_buffer = ns;
+        ns = add_str(product_buffer, len(product_buffer), sum_buffer, len(sum_buffer));
+        free(product_buffer);
+        free(sum_buffer);
+    }
+
+    int result_len = len(ns);
+    while(ns[0] =='0'&& result_len > 2){
+        char* free_buffer = ns;
+        ns = move_str_left(ns, result_len);
+        --result_len;
+    }
+    return ns;
+}
+
+// TODO: consider optimisation
+Number* multiply_numbers(Number* n1, Number* n2)
+{
+    Number* result = (Number*) malloc(sizeof(Number));
+    if(n1->sign == n2->sign){
+        result->sign = plus;
+    }
+    else
+    {
+        result->sign = minus;
+    }
+
+    result->value = multiply_str(n1->value, n1->length, n2->value, n2->length);
+    result->length = len(result->value);
     return result;
 }
 
@@ -648,6 +731,17 @@ void subtract_f()
     stack = buffer;
 }
 
+void mult_f()
+{
+    // Reusing operation's List* struct as result's place-holder
+    List* buffer = expression;
+    expression = expression->link;
+    buffer->link = stack;
+    buffer->type = number;
+    buffer->value = multiply_numbers(stack->value, stack->link->value);
+    stack = buffer;
+}
+
 // Tokenizes source based on ), (, \s symbols
 List* tokenize( char* source)
 {
@@ -850,7 +944,7 @@ int main(int argc, char *argv[]){
     // Setting string pool with language base function
     string_pool = add_to_stringpool(string_from_str(str_copy("+", 2), 2), add_f, sp_function);
     string_pool = add_to_stringpool(string_from_str(str_copy("-", 2), 2), subtract_f, sp_function);
-    string_pool = add_to_stringpool(string_from_str(str_copy("*", 2), 2), NULL, sp_function);
+    string_pool = add_to_stringpool(string_from_str(str_copy("*", 2), 2), mult_f, sp_function);
     string_pool = add_to_stringpool(string_from_str(str_copy("<", 2), 2), NULL, sp_function);
     string_pool = add_to_stringpool(string_from_str(str_copy(">", 2), 2), NULL, sp_function);
     string_pool = add_to_stringpool(string_from_str(str_copy("==", 3), 3), NULL, sp_function);
@@ -883,7 +977,6 @@ int main(int argc, char *argv[]){
     {
         calculate_with_trace(ast);
     }
-
     // freeing elements
     free_list(stack);
     //free_list(expression);
