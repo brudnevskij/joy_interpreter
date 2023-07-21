@@ -865,21 +865,44 @@ void dup_f()
     expression = expression->link;
     buffer->link = stack;
     buffer->type = stack->type;
-    if(buffer->type == number)
-    {
-        buffer->value = copy_number(stack->value);
+    switch (buffer->type) {
+        case number:
+            buffer->value = copy_number(stack->value);
+            break;
+        case list:
+            buffer->value = copy_list(stack->value);
+            break;
+        case stringpool_member:
+            buffer->value = stack->value;
+            break;
     }
-    else if(buffer->type == list)
-    {
-        buffer->value = copy_list(stack->value);
-    }
-    else
-    {
-        buffer->value = stack->value;
-    }
-
     stack = buffer;
 }
+
+void drop_f()
+{
+    // freeing operator
+    List* buffer = expression;
+    expression = expression->link;
+    free(buffer);
+
+    buffer = stack;
+    stack = stack->link;
+    switch (buffer->type) {
+        case number:
+            free_number(buffer->value);
+            free(buffer);
+            break;
+        case list:
+            free_list(buffer->value);
+            free(buffer);
+            break;
+        case stringpool_member:
+            free(buffer);
+            break;
+    }
+}
+
 // Tokenizes source based on ), (, \s symbols
 List* tokenize( char* source)
 {
@@ -1092,7 +1115,7 @@ int main(int argc, char *argv[]){
     add_to_stringpool(string_from_str(str_copy(">", 2), 2), more_f, sp_function);
     add_to_stringpool(string_from_str(str_copy("==", 3), 3), eq_f, sp_function);
     add_to_stringpool(string_from_str(str_copy("dup", 4), 4), dup_f, sp_function);
-    add_to_stringpool(string_from_str(str_copy("drop", 5), 5), NULL, sp_function);
+    add_to_stringpool(string_from_str(str_copy("drop", 5), 5), drop_f, sp_function);
     add_to_stringpool(string_from_str(str_copy("swap", 5), 5), NULL, sp_function);
     add_to_stringpool(string_from_str(str_copy("null", 5), 5), NULL, sp_function);
     add_to_stringpool(string_from_str(str_copy("first", 6), 6), NULL, sp_function);
