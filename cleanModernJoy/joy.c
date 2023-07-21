@@ -927,6 +927,21 @@ void null_f()
     stack=buffer;
 }
 
+void first_f()
+{
+    List* buffer = expression;
+    expression = expression->link;
+    free(buffer);
+
+    buffer = stack->value;
+    stack->value = buffer->link;
+    buffer->link = stack->link;
+
+    free_list(stack->value);
+    free(stack);
+    stack = buffer;
+}
+
 // Tokenizes source based on ), (, \s symbols
 List* tokenize( char* source)
 {
@@ -1142,7 +1157,7 @@ int main(int argc, char *argv[]){
     add_to_stringpool(string_from_str(str_copy("drop", 5), 5), drop_f, sp_function);
     add_to_stringpool(string_from_str(str_copy("swap", 5), 5), swap_f, sp_function);
     add_to_stringpool(string_from_str(str_copy("null", 5), 5), null_f, sp_function);
-    add_to_stringpool(string_from_str(str_copy("first", 6), 6), NULL, sp_function);
+    add_to_stringpool(string_from_str(str_copy("first", 6), 6), first_f, sp_function);
     add_to_stringpool(string_from_str(str_copy("rest", 5), 5), NULL, sp_function);
     add_to_stringpool(string_from_str(str_copy("cons", 5), 5), NULL, sp_function);
     add_to_stringpool(string_from_str(str_copy("uncons", 7), 7), NULL, sp_function);
