@@ -505,6 +505,15 @@ Number* compare_numbers(Number* n1, Number* n2)
     }
 }
 
+Number* copy_number(Number* n)
+{
+    Number* result = (Number*) malloc(sizeof(Number));
+    result->sign = n->sign;
+    result->value = str_copy(n->value, n->length);
+    result->length = n->length;
+    return result;
+}
+
 void print_number(Number* n){
     if(n->sign == minus)printf("n:-%s",n->value);
     else if(n->sign == plus)printf("n:%s",n->value);
@@ -548,6 +557,28 @@ List* reverse_list(List * l)
     return result;
 }
 
+List* copy_list(List* l)
+{
+    List* result = NULL;
+    while(l != NULL && l->type != closed_parenthesis)
+    {
+        if(l->type == number)
+        {
+            result = add_to_list(copy_number(l->value), l->type, result);
+        }
+        else if(l->type == stringpool_member)
+        {
+            result = add_to_list(l->value, l->type, result);
+        }
+        else if(l->type == list)
+        {
+            result = add_to_list(copy_list(l->value), l->type, result);
+        }
+        l = l->link;
+    }
+    return reverse_list(result);
+}
+
 void free_list(List* l){
     List* buffer;
     while(l != NULL)
@@ -586,9 +617,11 @@ void print_list(List* l)
                 print_string(
                         ((Pool_member*)l->value)->name
                         );
+                printf(" ");
                 break;
             case number:
                 print_number((Number*)l->value);
+                printf(" ");
                 break;
             case list:
                 printf("(");
@@ -825,6 +858,28 @@ void eq_f()
     stack = buffer;
 }
 
+void dup_f()
+{
+    // Reusing operation's List* struct as result's place-holder
+    List* buffer = expression;
+    expression = expression->link;
+    buffer->link = stack;
+    buffer->type = stack->type;
+    if(buffer->type == number)
+    {
+        buffer->value = copy_number(stack->value);
+    }
+    else if(buffer->type == list)
+    {
+        buffer->value = copy_list(stack->value);
+    }
+    else
+    {
+        buffer->value = stack->value;
+    }
+
+    stack = buffer;
+}
 // Tokenizes source based on ), (, \s symbols
 List* tokenize( char* source)
 {
@@ -895,6 +950,7 @@ List* tokenize( char* source)
 List* parse(List* token_list)
 {
     List* result = token_list;
+    List* buffer = NULL;
     List** sub_list_stack = NULL;
     int stack_ptr = 0;
 
@@ -953,7 +1009,11 @@ List* calculate_with_trace(List* ast)
             }
             else if(member->type == sp_string)
             {
-
+                // Putting List member on stack
+                buffer = expression;
+                expression = expression->link;
+                buffer->link = stack;
+                stack = buffer;
             }
             else if (member->type == sp_subexpression)
             {
@@ -1031,7 +1091,7 @@ int main(int argc, char *argv[]){
     add_to_stringpool(string_from_str(str_copy("<", 2), 2), less_f, sp_function);
     add_to_stringpool(string_from_str(str_copy(">", 2), 2), more_f, sp_function);
     add_to_stringpool(string_from_str(str_copy("==", 3), 3), eq_f, sp_function);
-    add_to_stringpool(string_from_str(str_copy("dup", 4), 4), NULL, sp_function);
+    add_to_stringpool(string_from_str(str_copy("dup", 4), 4), dup_f, sp_function);
     add_to_stringpool(string_from_str(str_copy("drop", 5), 5), NULL, sp_function);
     add_to_stringpool(string_from_str(str_copy("swap", 5), 5), NULL, sp_function);
     add_to_stringpool(string_from_str(str_copy("null", 5), 5), NULL, sp_function);
