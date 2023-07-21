@@ -79,8 +79,9 @@ void* mymalloc(int n, int linen, const char* caller){
 #define free(n) myfree(n, __LINE__, __FUNCTION__)
 #define malloc(n) mymalloc(n, __LINE__, __FUNCTION__)
 
-// service_pool keeps interpreter service data types, for example ")", "("
-String* service_pool[2];
+// Straight link for true and false values
+Pool_member* true_link;
+Pool_member* false_link;
 
 //
 //<----------------------------String operations---------------------------->
@@ -430,24 +431,24 @@ Number* add_numbers(Number* n1, Number* n2)
 
 // TODO: consider optimisation
 char* multiply_str(char* n1, int n1_len, char* n2, int n2_len){
-    char* ns = str_copy("0", 2);
+    char* result = str_copy("0", 2);
     char* product_buffer;
     char* sum_buffer;
     for(int i = 0; i < n1_len-1; i++){
         product_buffer = multiply_str_by_char(n2, n2_len, n1[n1_len-2-i], i);
-        sum_buffer = ns;
-        ns = add_str(product_buffer, len(product_buffer), sum_buffer, len(sum_buffer));
+        sum_buffer = result;
+        result = add_str(product_buffer, len(product_buffer), sum_buffer, len(sum_buffer));
         free(product_buffer);
         free(sum_buffer);
     }
 
-    int result_len = len(ns);
-    while(ns[0] =='0'&& result_len > 2){
-        char* free_buffer = ns;
-        ns = move_str_left(ns, result_len);
+    int result_len = len(result);
+    while(result[0] == '0' && result_len > 2){
+        char* free_buffer = result;
+        result = move_str_left(result, result_len);
         --result_len;
     }
-    return ns;
+    return result;
 }
 
 // TODO: consider optimisation
@@ -465,6 +466,43 @@ Number* multiply_numbers(Number* n1, Number* n2)
     result->value = multiply_str(n1->value, n1->length, n2->value, n2->length);
     result->length = len(result->value);
     return result;
+}
+
+// if n1 > n2, returns n1
+// if n1 < n2, returns n2
+// if n1 == n2, returns NULL
+Number* compare_numbers(Number* n1, Number* n2)
+{
+    if(n1->sign != n2->sign)
+    {
+        if(n1->sign == plus)return n1;
+        return n2;
+    }
+    else
+    {
+        if(n1->sign == plus)
+        {
+            if(n1->length > n2->length)return n1;
+            else if(n2->length > n1->length) return n2;
+
+            char* val_cmp = compare_str(n1->value, n2->value, n1->length);
+            if(val_cmp == n1->value) return n1;
+            if(val_cmp == n2->value)return n2;
+            //n1 == n2
+            return NULL;
+        }
+        else
+        {
+            if(n1->length > n2->length)return n2;
+            else if(n2->length > n1->length) return n1;
+
+            char* val_cmp = compare_str(n1->value, n2->value, n1->length);
+            if(val_cmp == n1->value) return n2;
+            if(val_cmp == n2->value)return n1;
+            //n1 == n2
+            return NULL;
+        }
+    }
 }
 
 void print_number(Number* n){
@@ -742,6 +780,51 @@ void mult_f()
     stack = buffer;
 }
 
+void less_f()
+{
+    // Reusing operation's List* struct as result's place-holder
+    List* buffer = expression;
+    expression = expression->link;
+    buffer->link = stack;
+    buffer->type = stringpool_member;
+
+    Number* n = compare_numbers(stack->value, stack->link->value);
+    if(n == stack->value)buffer->value = true_link;
+    else buffer->value = false_link;
+
+    stack = buffer;
+}
+
+void more_f()
+{
+    // Reusing operation's List* struct as result's place-holder
+    List* buffer = expression;
+    expression = expression->link;
+    buffer->link = stack;
+    buffer->type = stringpool_member;
+
+    Number* n = compare_numbers(stack->value, stack->link->value);
+    if(n == stack->link->value)buffer->value = true_link;
+    else buffer->value = false_link;
+
+    stack = buffer;
+}
+
+void eq_f()
+{
+    // Reusing operation's List* struct as result's place-holder
+    List* buffer = expression;
+    expression = expression->link;
+    buffer->link = stack;
+    buffer->type = stringpool_member;
+
+    Number* n = compare_numbers(stack->value, stack->link->value);
+    if(n == NULL)buffer->value = true_link;
+    else buffer->value = false_link;
+
+    stack = buffer;
+}
+
 // Tokenizes source based on ), (, \s symbols
 List* tokenize( char* source)
 {
@@ -942,26 +1025,26 @@ int main(int argc, char *argv[]){
     }
 
     // Setting string pool with language base function
-    string_pool = add_to_stringpool(string_from_str(str_copy("+", 2), 2), add_f, sp_function);
-    string_pool = add_to_stringpool(string_from_str(str_copy("-", 2), 2), subtract_f, sp_function);
-    string_pool = add_to_stringpool(string_from_str(str_copy("*", 2), 2), mult_f, sp_function);
-    string_pool = add_to_stringpool(string_from_str(str_copy("<", 2), 2), NULL, sp_function);
-    string_pool = add_to_stringpool(string_from_str(str_copy(">", 2), 2), NULL, sp_function);
-    string_pool = add_to_stringpool(string_from_str(str_copy("==", 3), 3), NULL, sp_function);
-    string_pool = add_to_stringpool(string_from_str(str_copy("dup", 4), 4), NULL, sp_function);
-    string_pool = add_to_stringpool(string_from_str(str_copy("drop", 5), 5), NULL, sp_function);
-    string_pool = add_to_stringpool(string_from_str(str_copy("swap", 5), 5), NULL, sp_function);
-    string_pool = add_to_stringpool(string_from_str(str_copy("null", 5), 5), NULL, sp_function);
-    string_pool = add_to_stringpool(string_from_str(str_copy("first", 6), 6), NULL, sp_function);
-    string_pool = add_to_stringpool(string_from_str(str_copy("rest", 5), 5), NULL, sp_function);
-    string_pool = add_to_stringpool(string_from_str(str_copy("cons", 5), 5), NULL, sp_function);
-    string_pool = add_to_stringpool(string_from_str(str_copy("uncons", 7), 7), NULL, sp_function);
-    string_pool = add_to_stringpool(string_from_str(str_copy("i", 2), 2), NULL, sp_function);
-    string_pool = add_to_stringpool(string_from_str(str_copy("if", 3), 3), NULL, sp_function);
-    string_pool = add_to_stringpool(string_from_str(str_copy("dip", 4), 4), NULL, sp_function);
-    string_pool = add_to_stringpool(string_from_str(str_copy("def",4), 4), NULL, sp_function);
-    string_pool = add_to_stringpool(string_from_str(str_copy("true", 5), 5), NULL, sp_string);
-    string_pool = add_to_stringpool(string_from_str(str_copy("false", 5), 5), NULL, sp_string);
+    add_to_stringpool(string_from_str(str_copy("+", 2), 2), add_f, sp_function);
+    add_to_stringpool(string_from_str(str_copy("-", 2), 2), subtract_f, sp_function);
+    add_to_stringpool(string_from_str(str_copy("*", 2), 2), mult_f, sp_function);
+    add_to_stringpool(string_from_str(str_copy("<", 2), 2), less_f, sp_function);
+    add_to_stringpool(string_from_str(str_copy(">", 2), 2), more_f, sp_function);
+    add_to_stringpool(string_from_str(str_copy("==", 3), 3), eq_f, sp_function);
+    add_to_stringpool(string_from_str(str_copy("dup", 4), 4), NULL, sp_function);
+    add_to_stringpool(string_from_str(str_copy("drop", 5), 5), NULL, sp_function);
+    add_to_stringpool(string_from_str(str_copy("swap", 5), 5), NULL, sp_function);
+    add_to_stringpool(string_from_str(str_copy("null", 5), 5), NULL, sp_function);
+    add_to_stringpool(string_from_str(str_copy("first", 6), 6), NULL, sp_function);
+    add_to_stringpool(string_from_str(str_copy("rest", 5), 5), NULL, sp_function);
+    add_to_stringpool(string_from_str(str_copy("cons", 5), 5), NULL, sp_function);
+    add_to_stringpool(string_from_str(str_copy("uncons", 7), 7), NULL, sp_function);
+    add_to_stringpool(string_from_str(str_copy("i", 2), 2), NULL, sp_function);
+    add_to_stringpool(string_from_str(str_copy("if", 3), 3), NULL, sp_function);
+    add_to_stringpool(string_from_str(str_copy("dip", 4), 4), NULL, sp_function);
+    add_to_stringpool(string_from_str(str_copy("def",4), 4), NULL, sp_function);
+    true_link = add_to_stringpool(string_from_str(str_copy("true", 5), 5), NULL, sp_string);
+    false_link = add_to_stringpool(string_from_str(str_copy("false", 6), 6), NULL, sp_string);
 
     List* l = tokenize(source_code);
     List* ast = parse(l);
