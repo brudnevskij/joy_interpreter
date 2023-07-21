@@ -929,6 +929,7 @@ void null_f()
 
 void first_f()
 {
+    // freeing operator
     List* buffer = expression;
     expression = expression->link;
     free(buffer);
@@ -940,6 +941,32 @@ void first_f()
     free_list(stack->value);
     free(stack);
     stack = buffer;
+}
+
+void rest_f()
+{
+    // freeing operator
+    List* buffer = expression;
+    expression = expression->link;
+    free(buffer);
+
+    buffer = stack->value;
+    stack->value = buffer->link;
+
+    // freeing buffer
+    switch (buffer->type) {
+        case number:
+            free_number(buffer->value);
+            free(buffer);
+            break;
+        case list:
+            free_list(buffer->value);
+            free(buffer);
+            break;
+        case stringpool_member:
+            free(buffer);
+            break;
+    }
 }
 
 // Tokenizes source based on ), (, \s symbols
@@ -1158,7 +1185,7 @@ int main(int argc, char *argv[]){
     add_to_stringpool(string_from_str(str_copy("swap", 5), 5), swap_f, sp_function);
     add_to_stringpool(string_from_str(str_copy("null", 5), 5), null_f, sp_function);
     add_to_stringpool(string_from_str(str_copy("first", 6), 6), first_f, sp_function);
-    add_to_stringpool(string_from_str(str_copy("rest", 5), 5), NULL, sp_function);
+    add_to_stringpool(string_from_str(str_copy("rest", 5), 5), rest_f, sp_function);
     add_to_stringpool(string_from_str(str_copy("cons", 5), 5), NULL, sp_function);
     add_to_stringpool(string_from_str(str_copy("uncons", 7), 7), NULL, sp_function);
     add_to_stringpool(string_from_str(str_copy("i", 2), 2), NULL, sp_function);
