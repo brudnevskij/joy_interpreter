@@ -579,6 +579,27 @@ List* copy_list(List* l)
     return reverse_list(result);
 }
 
+List* concat_list(List* head, List* tail)
+{
+    List* result = head;
+
+    // Seeking end
+    while(head->link != NULL)
+    {
+        // Eliminating closed parentheses
+        if(head->link->type == closed_parenthesis)
+        {
+            free(head->link);
+            head->link = NULL;
+            break;
+        }
+        head = head->link;
+    }
+
+    head->link = tail;
+    return result;
+}
+
 void free_list(List* l){
     List* buffer;
     while(l != NULL)
@@ -997,6 +1018,20 @@ void uncons_f()
     stack->link = buffer;
 }
 
+void i_f()
+{
+    // freeing operator
+    List* buffer = expression;
+    expression = expression->link;
+    free(buffer);
+
+    buffer = stack;
+    stack = stack->link;
+
+    expression = concat_list(buffer->value, expression);
+    free(buffer);
+}
+
 // Tokenizes source based on ), (, \s symbols
 List* tokenize( char* source)
 {
@@ -1216,7 +1251,7 @@ int main(int argc, char *argv[]){
     add_to_stringpool(string_from_str(str_copy("rest", 5), 5), rest_f, sp_function);
     add_to_stringpool(string_from_str(str_copy("cons", 5), 5), cons_f, sp_function);
     add_to_stringpool(string_from_str(str_copy("uncons", 7), 7), uncons_f, sp_function);
-    add_to_stringpool(string_from_str(str_copy("i", 2), 2), NULL, sp_function);
+    add_to_stringpool(string_from_str(str_copy("i", 2), 2), i_f, sp_function);
     add_to_stringpool(string_from_str(str_copy("if", 3), 3), NULL, sp_function);
     add_to_stringpool(string_from_str(str_copy("dip", 4), 4), NULL, sp_function);
     add_to_stringpool(string_from_str(str_copy("def",4), 4), NULL, sp_function);
