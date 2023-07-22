@@ -1053,6 +1053,7 @@ void if_f()
         free_list(true_condition->value);
     }
 
+    stack = stack->link->link->link;
     free(bool);
     free(true_condition);
     free(false_condition);
@@ -1073,6 +1074,27 @@ void dip_f()
     buffer = concat_list(first_stack_buffer->value, second_stack_buffer);
     expression = concat_list(buffer, expression);
     free(first_stack_buffer);
+}
+
+void def_f()
+{
+    // freeing operator
+    List* buffer = expression;
+    expression = expression->link;
+    free(buffer);
+
+    List* function_name = stack->link;
+    List* function_body = stack;
+
+    Pool_member* pool_member_function = search_stringpool(((Pool_member*)function_name->value)->name);
+    pool_member_function->type = sp_subexpression;
+    pool_member_function->value = function_body->value;
+
+    stack = stack->link->link;
+
+    // freeing function's placeholders
+    free(function_name);
+    free(function_body);
 }
 
 // Tokenizes source based on ), (, \s symbols
@@ -1212,7 +1234,12 @@ List* calculate_with_trace(List* ast)
             }
             else if (member->type == sp_subexpression)
             {
+                buffer = expression;
+                List * lsub = member->value;
 
+                expression = expression->link;
+                expression = concat_list(copy_list(member->value), expression);
+                free(buffer);
             }
         }
         else
@@ -1297,7 +1324,7 @@ int main(int argc, char *argv[]){
     add_to_stringpool(string_from_str(str_copy("i", 2), 2), i_f, sp_function);
     add_to_stringpool(string_from_str(str_copy("if", 3), 3), if_f, sp_function);
     add_to_stringpool(string_from_str(str_copy("dip", 4), 4), dip_f, sp_function);
-    add_to_stringpool(string_from_str(str_copy("def",4), 4), NULL, sp_function);
+    add_to_stringpool(string_from_str(str_copy("def",4), 4), def_f, sp_function);
     true_link = add_to_stringpool(string_from_str(str_copy("true", 5), 5), NULL, sp_string);
     false_link = add_to_stringpool(string_from_str(str_copy("false", 6), 6), NULL, sp_string);
 
@@ -1305,11 +1332,11 @@ int main(int argc, char *argv[]){
     List* ast = parse(l);
     free(source_code);
     printf("\ntoken_list\n");
-    print_list_debug(l);
-    print_list(l);
-    printf("\nAST\n");
-    print_list_debug(ast);
-    print_list(ast);
+    //print_list_debug(l);
+    //print_list(l);
+    //printf("\nAST\n");
+    //print_list_debug(ast);
+    //print_list(ast);
 
     if (trace)
     {
