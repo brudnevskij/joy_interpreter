@@ -1235,8 +1235,6 @@ List* calculate_with_trace(List* ast)
             else if (member->type == sp_subexpression)
             {
                 buffer = expression;
-                List * lsub = member->value;
-
                 expression = expression->link;
                 expression = concat_list(copy_list(member->value), expression);
                 free(buffer);
@@ -1256,6 +1254,52 @@ List* calculate_with_trace(List* ast)
         printf("\nStack:");
         print_list(stack);
         printf("\n");
+    }
+    return stack;
+}
+
+List* calculate(List* ast)
+{
+    List* buffer = NULL;
+    expression = ast;
+    stack = NULL;
+    int operation = 0;
+
+    while (expression != NULL && expression->type != closed_parenthesis)
+    {
+        ++operation;
+        if(expression->type == stringpool_member)
+        {
+            Pool_member* member = expression->value;
+            if (member->type == sp_function)
+            {
+                void (*fptr)() = member->value;
+                (*fptr)();
+            }
+            else if(member->type == sp_string)
+            {
+                // Putting List member on stack
+                buffer = expression;
+                expression = expression->link;
+                buffer->link = stack;
+                stack = buffer;
+            }
+            else if (member->type == sp_subexpression)
+            {
+                buffer = expression;
+                expression = expression->link;
+                expression = concat_list(copy_list(member->value), expression);
+                free(buffer);
+            }
+        }
+        else
+        {
+            // Putting List member on stack
+            buffer = expression;
+            expression = expression->link;
+            buffer->link = stack;
+            stack = buffer;
+        }
     }
     return stack;
 }
@@ -1331,22 +1375,24 @@ int main(int argc, char *argv[]){
     List* l = tokenize(source_code);
     List* ast = parse(l);
     free(source_code);
-    printf("\ntoken_list\n");
-    //print_list_debug(l);
-    //print_list(l);
-    //printf("\nAST\n");
-    //print_list_debug(ast);
-    //print_list(ast);
 
     if (trace)
     {
         calculate_with_trace(ast);
     }
+    else
+    {
+        calculate(ast);
+    }
     // freeing elements
     free_list(stack);
     //free_list(expression);
     free_string_pool();
-    printf("\nmallocs: %d\n", malloccounter);
-    printf("free: %d\n", freecounter);
+    if (trace)
+    {
+        printf("\nmallocs: %d\n", malloccounter);
+        printf("free: %d\n", freecounter);
+    }
+
     return 0;
 }
