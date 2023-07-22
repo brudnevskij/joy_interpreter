@@ -1386,7 +1386,6 @@ int main(int argc, char *argv[]){
     }
     // freeing elements
     free_list(stack);
-    //free_list(expression);
     free_string_pool();
     if (trace)
     {

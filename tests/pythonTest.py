@@ -1,4 +1,5 @@
 import sys
+import gc
 
 def append(fl, sl):
     if fl == None and sl == None:
@@ -12,7 +13,6 @@ def append(fl, sl):
             return (fl[0], append(fl[1], sl))
 
 def permBase(l):
-
     return ((l[0], (l[1][0], None)), ((l[1][0], (l[0], None)), None))
 
 def getByN (l, n):
@@ -47,7 +47,7 @@ def permut(l, n):
     elif n == 0:
         return None
     else:
-        return append(appendToAll(permut(delByN(l, n-1), count(delByN(l, n-1))), getByN(l, n-1)), permut(l, n-1) )
+        return append(appendToAll(permut(delByN(l, n-1), count(delByN(l, n-1))), getByN(l, n-1)), permut(l, n-1))
 
 def genPerms(l):
     return permut(l, count(l))
@@ -55,11 +55,14 @@ def genPerms(l):
 
 
 sys.setrecursionlimit(100000)
+gc.enable()
+
 #genPerms((1, (2, None)))
 #genPerms((1, (2, (3, None))))
-#print(count(genPerms((1, (2, (3, (4, None)))))))
+# print(count(genPerms((1, (2, (3, (4, None)))))))
 #print(count(genPerms((1, (2, (3, (4, (5, None))))))))
 #print(count(genPerms((1, (2, (3, (4, (5, (6, None)))))))))
-genPerms((1, (2, (3, (4, (5, (6, (7, (8, None)))))))))
-#genPerms((1, (2, (3, (4, (5, (6, (7, None))))))))
+print(count(genPerms((1, (2, (3, (4, (5, (6, (7, None))))))))))
+# genPerms((1, (2, (3, (4, (5, (6, (7, (8, None)))))))))
+gc.collect()
 print("done")
