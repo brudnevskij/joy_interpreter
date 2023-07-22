@@ -1351,14 +1351,14 @@ int main(int argc, char** argv){
 		}
 		
 		if(trace)printUlistStringPool(calculate(buffer));
-		else printUlistStringPool(calculateNoTrace(buffer));
+		else calculateNoTrace(buffer);
 	}
 	
 
 	free(buffer);
 	freeUlist(stack);
 	freeStringPool();
-    printf("\nMalloc calls:%d Free calls:%d\n",malloccounter,freecounter);
+    if(!trace)printf("\nMalloc calls:%d Free calls:%d\n",malloccounter,freecounter);
 
     return 0;
 }
