@@ -1086,7 +1086,7 @@ void def_f()
     List* function_name = stack->link;
     List* function_body = stack;
 
-    Pool_member* pool_member_function = search_stringpool(((Pool_member*)function_name->value)->name);
+    Pool_member* pool_member_function = function_name->value;
     pool_member_function->type = sp_subexpression;
     pool_member_function->value = function_body->value;
 
