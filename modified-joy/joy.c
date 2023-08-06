@@ -645,9 +645,9 @@ void print_list(List* l)
                 printf(" ");
                 break;
             case list:
-                printf("(");
+                printf("[");
                 print_list((List*)l->value);
-                printf(")");
+                printf("]");
                 break;
             default:
                 break;
@@ -678,9 +678,9 @@ void print_list_debug(List* l)
             case list:
                 printf("member %d\n", i);
                 printf("type list\n", i);
-                printf("(\n");
+                printf("[\n");
                 print_list_debug((List*)l->value);
-                printf(")\n");
+                printf("]\n");
                 break;
             default:
                 break;
@@ -744,7 +744,7 @@ void free_string_pool(){
 int is_separator(char c)
 {
     // all system char and parentheses are separators
-    if(c <= ' ' || c == '(' || c == ')') return 1;
+    if(c <= ' ' || c == '[' || c == ']') return 1;
     return 0;
 }
 
@@ -1105,12 +1105,12 @@ List* tokenize( char* source)
 
     while(source[i] != '\0')
     {
-        if(source[i] == '(')
+        if(source[i] == '[')
         {
             result = add_to_list(NULL, open_parenthesis, result);
             ++stack_depth;
         }
-        else if (source[i] == ')')
+        else if (source[i] == ']')
         {
             result = add_to_list(NULL, closed_parenthesis, result);
         }

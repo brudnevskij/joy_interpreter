@@ -1,30 +1,30 @@
-//(a)
-one (null(false)(uncons null (cons)dip)if) def
+//[a]
+one [null[false][uncons null [cons]dip]if] def
 //a a
-drop2 (swap drop) def
-//(a)
-count (null( 0)( uncons count (cons) dip 1 + drop2 drop2)if) def
-//(a)
-last ( one ( uncons swap)( uncons last (cons) dip)if) def
-//(a) (a)
-append(swap null (drop)(swap (uncons) dip append cons) if)def
-//(a), (a) count == 2
-permBase (dup (dup uncons uncons (swap) dip cons cons () cons cons)dip swap) def
-//last (dup one (first)(rest last)if) def
-//(a) a
-appendToAll (null (swap drop)(uncons (swap dup(swap cons)dip)dip appendToAll cons)if) def
-//(a) int
-getByN (swap 0 == drop2 (swap first drop2)(1 - drop2 drop2 swap rest getByN )if ) def
-//(a) int
-delByN (swap 0 == drop2 (swap rest drop2)(1 - drop2 drop2 (uncons)dip swap delByN cons)if)def
-//(a) int
-permut(
-dup (swap 1 - drop2 drop2 dup(
-	swap dup (swap dup (swap getByN)dip)dip delByN count 2 == drop2 (drop permBase drop2)(swap permut)if appendToAll
-	)dip
-    )dip swap 0 == drop2 (drop drop ())(swap permut)if append
-)def
-//(a)
-genPerms (count swap permut) def
+drop2 [swap drop] def
+//[a]
+count [null[ 0][ uncons count [cons] dip 1 + drop2 drop2]if] def
+//[a]
+last [ one [ uncons swap][ uncons last [cons] dip]if] def
+//[a] [a]
+append[swap null [drop][swap [uncons] dip append cons] if]def
+//[a], [a] count == 2
+permBase [dup [dup uncons uncons [swap] dip cons cons [] cons cons]dip swap] def
+//last [dup one [first][rest last]if] def
+//[a] a
+appendToAll [null [swap drop][uncons [swap dup[swap cons]dip]dip appendToAll cons]if] def
+//[a] int
+getByN [swap 0 == drop2 [swap first drop2][1 - drop2 drop2 swap rest getByN ]if ] def
+//[a] int
+delByN [swap 0 == drop2 [swap rest drop2][1 - drop2 drop2 [uncons]dip swap delByN cons]if]def
+//[a] int
+permut[
+dup [swap 1 - drop2 drop2 dup[
+	swap dup [swap dup [swap getByN]dip]dip delByN count 2 == drop2 [drop permBase drop2][swap permut]if appendToAll
+	]dip
+    ]dip swap 0 == drop2 [drop drop []][swap permut]if append
+]def
+//[a]
+genPerms [count swap permut] def
 
 (1 2 3 4 5 6 7 8 9 ) genPerms count drop2
