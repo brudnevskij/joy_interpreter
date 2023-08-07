@@ -5,7 +5,7 @@
 #include <string.h>
 
 // expressionType represents alias, for types of multilayer List
-enum expressionType{stringpool_member, list, number, open_parenthesis, closed_parenthesis};
+enum expressionType{string_pool_member, list, number, open_parenthesis, closed_parenthesis, blocked_string_pool_member};
 
 // stringPoolType represents alias, for string pool members
 enum stringPoolType{sp_string, sp_function, sp_subexpression};
@@ -566,7 +566,7 @@ List* copy_list(List* l)
         {
             result = add_to_list(copy_number(l->value), l->type, result);
         }
-        else if(l->type == stringpool_member)
+        else if(l->type == string_pool_member)
         {
             result = add_to_list(l->value, l->type, result);
         }
@@ -621,7 +621,10 @@ void free_list(List* l){
             case closed_parenthesis:
                 free(l);
                 break;
-            case stringpool_member: // in case of SP_MEMBER strings are freed in the end
+            case string_pool_member: // in case of SP_MEMBER strings are freed in the end
+                free(l);
+                break;
+            case blocked_string_pool_member:
                 free(l);
                 break;
         }
@@ -634,7 +637,7 @@ void print_list(List* l)
     while(l != NULL)
     {
         switch (l->type) {
-            case stringpool_member:
+            case string_pool_member:
                 print_string(
                         ((Pool_member*)l->value)->name
                         );
@@ -648,6 +651,13 @@ void print_list(List* l)
                 printf("[");
                 print_list((List*)l->value);
                 printf("]");
+                break;
+            case blocked_string_pool_member:
+                printf("`");
+                print_string(
+                        ((Pool_member*)l->value)->name
+                );
+                printf(" ");
                 break;
             default:
                 break;
@@ -663,7 +673,7 @@ void print_list_debug(List* l)
     while(l != NULL)
     {
         switch (l->type) {
-            case stringpool_member:
+            case string_pool_member:
                 printf("member %d\n", i);
                 printf("type sp_member\n");
                 print_stringnl(
@@ -681,6 +691,14 @@ void print_list_debug(List* l)
                 printf("[\n");
                 print_list_debug((List*)l->value);
                 printf("]\n");
+                break;
+            case blocked_string_pool_member:
+                printf("member %d\n", i);
+                printf("type sp_member\n");
+                printf("`");
+                print_stringnl(
+                        ((Pool_member*)l->value)->name
+                );
                 break;
             default:
                 break;
@@ -840,7 +858,7 @@ void less_f()
     List* buffer = expression;
     expression = expression->link;
     buffer->link = stack;
-    buffer->type = stringpool_member;
+    buffer->type = string_pool_member;
 
     Number* n = compare_numbers(stack->value, stack->link->value);
     if(n == stack->value)buffer->value = true_link;
@@ -855,7 +873,7 @@ void more_f()
     List* buffer = expression;
     expression = expression->link;
     buffer->link = stack;
-    buffer->type = stringpool_member;
+    buffer->type = string_pool_member;
 
     Number* n = compare_numbers(stack->value, stack->link->value);
     if(n == stack->link->value)buffer->value = true_link;
@@ -870,7 +888,7 @@ void eq_f()
     List* buffer = expression;
     expression = expression->link;
     buffer->link = stack;
-    buffer->type = stringpool_member;
+    buffer->type = string_pool_member;
 
     Number* n = compare_numbers(stack->value, stack->link->value);
     if(n == NULL)buffer->value = true_link;
@@ -893,7 +911,7 @@ void dup_f()
         case list:
             buffer->value = copy_list(stack->value);
             break;
-        case stringpool_member:
+        case string_pool_member:
             buffer->value = stack->value;
             break;
     }
@@ -918,7 +936,7 @@ void drop_f()
             free_list(buffer->value);
             free(buffer);
             break;
-        case stringpool_member:
+        case string_pool_member:
             free(buffer);
             break;
     }
@@ -942,7 +960,7 @@ void null_f()
     List* buffer = expression;
     expression = expression->link;
     buffer->link = stack;
-    buffer->type = stringpool_member;
+    buffer->type = string_pool_member;
     if(stack->value == NULL || ((List*)stack->value)->type == closed_parenthesis) buffer->value = true_link;
     else buffer->value = false_link;
     stack=buffer;
@@ -958,6 +976,7 @@ void first_f()
     buffer = stack->value;
     stack->value = buffer->link;
     buffer->link = stack->link;
+    if (buffer->type == string_pool_member)buffer->type = blocked_string_pool_member;
 
     free_list(stack->value);
     free(stack);
@@ -984,7 +1003,7 @@ void rest_f()
             free_list(buffer->value);
             free(buffer);
             break;
-        case stringpool_member:
+        case string_pool_member:
             free(buffer);
             break;
     }
@@ -999,6 +1018,8 @@ void cons_f()
 
     buffer = stack->link;
     stack->link = buffer->link;
+    // Unlock SP member
+    if (buffer->type == blocked_string_pool_member) buffer->type = string_pool_member;
 
     buffer->link = stack->value;
     stack->value = buffer;
@@ -1013,6 +1034,8 @@ void uncons_f()
 
     buffer = stack->value;
     stack->value = buffer->link;
+    // Lock SP member
+    if(buffer->type == string_pool_member) buffer->type = blocked_string_pool_member;
 
     buffer->link = stack->link;
     stack->link = buffer;
@@ -1138,7 +1161,7 @@ List* tokenize( char* source)
             }
             else
             {
-                type = stringpool_member;
+                type = string_pool_member;
                 Pool_member* member =  search_stringpool(token);
                 if(member == NULL)
                 {
@@ -1216,7 +1239,7 @@ List* calculate_with_trace(List* ast)
     while (expression != NULL && expression->type != closed_parenthesis)
     {
         ++operation;
-        if(expression->type == stringpool_member)
+        if(expression->type == string_pool_member)
         {
             Pool_member* member = expression->value;
             if (member->type == sp_function)
@@ -1268,7 +1291,7 @@ List* calculate(List* ast)
     while (expression != NULL && expression->type != closed_parenthesis)
     {
         ++operation;
-        if(expression->type == stringpool_member)
+        if(expression->type == string_pool_member)
         {
             Pool_member* member = expression->value;
             if (member->type == sp_function)
